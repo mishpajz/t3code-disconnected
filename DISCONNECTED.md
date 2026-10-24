@@ -139,8 +139,8 @@ The fork's own workflows run on GitHub-hosted runners and are prefixed `disconne
 | `disconnected-windows-tests.yml`     | Manual                                                       | Tests on Windows, for the whole repo or one package                               |
 | `disconnected-windows-installer.yml` | Manual                                                       | Builds the Windows x64 installer and attaches it to the run; nothing is published |
 
-The Windows installer is built without T3 Connect, Clerk or relay configuration, and without
-the WSL runtime. It is **unsigned**.
+The Windows installer is built without T3 Connect, Clerk or relay configuration, without an
+auto-update feed, and without the WSL runtime. It is **unsigned**.
 
 ## License
 

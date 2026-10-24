@@ -4,9 +4,9 @@ name: Disconnected Windows installer
 # an artifact. Nothing is published or uploaded anywhere else.
 #
 # Unlike upstream's release.yml, this build passes no T3 Connect, Clerk, relay
-# or tracing configuration, and does not embed the WSL runtime (the WSL backend
-# is unavailable; the native Windows backend is used). The installer is
-# unsigned. See DISCONNECTED.md.
+# or tracing configuration, has no auto-update feed, and does not embed the WSL
+# runtime (the WSL backend is unavailable; the native Windows backend is used).
+# The installer is unsigned. See DISCONNECTED.md.
 
 on:
   workflow_dispatch:
@@ -68,6 +68,9 @@ jobs:
           if [[ -n "$VERSION" ]]; then
             args+=(--build-version "$VERSION")
           fi
+          # The build derives the desktop auto-update feed from GITHUB_REPOSITORY.
+          # Without it the app is packaged with no update feed.
+          unset GITHUB_REPOSITORY
           vp run dist:desktop:artifact "${args[@]}"
 
       - name: Upload installer
