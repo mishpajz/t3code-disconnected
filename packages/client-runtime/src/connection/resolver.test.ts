@@ -23,6 +23,7 @@ import * as ConnectionCredentialStore from "./credentialStore.ts";
 import {
   ConnectionTransientError,
   PrimaryConnectionTarget,
+  RelayConnectionTarget,
   SshConnectionTarget,
   type ConnectionTarget,
 } from "./model.ts";
@@ -167,6 +168,26 @@ const makeDependencies = Effect.fn("TestConnectionResolver.makeDependencies")((o
 });
 
 describe("ConnectionResolver", () => {
+  // t3code-disconnected: T3 Connect is disabled (DISCONNECTED.md).
+  it.effect("blocks a T3 Connect environment without asking the relay for authorization", () =>
+    Effect.gen(function* () {
+      let dpopAttempts = 0;
+      const layerBroker = yield* makeDependencies({
+        authorizeDpop: () => {
+          dpopAttempts += 1;
+          return Effect.die("T3 Connect authorization must not run");
+        },
+      });
+      const broker = yield* ConnectionResolver.ConnectionResolver.pipe(Effect.provide(layerBroker));
+      const target = new RelayConnectionTarget({ environmentId: ENVIRONMENT_ID, label: "Relay" });
+
+      const error = yield* Effect.flip(broker.prepare(catalogEntry(target)));
+
+      expect(error).toMatchObject({ _tag: "ConnectionBlockedError", reason: "unsupported" });
+      expect(dpopAttempts).toBe(0);
+    }),
+  );
+
   it.effect("blocks an old host during discovery before opening orchestration RPC", () =>
     Effect.gen(function* () {
       const layerBroker = yield* makeDependencies({ descriptorProtocolVersion: null });

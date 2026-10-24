@@ -7,6 +7,7 @@ import * as Effect from "effect/Effect";
 import * as FileSystem from "effect/FileSystem";
 import * as Layer from "effect/Layer";
 
+import { T3_CONNECT_ENABLED } from "@t3tools/shared/disconnected";
 import { DEFAULT_SIGNAL_EXPORT } from "@t3tools/shared/observability";
 import * as HostProcess from "@t3tools/shared/HostProcess";
 import * as OtelEnvironment from "@t3tools/shared/otelEnvironment";
@@ -258,7 +259,8 @@ it.layer(NodeServices.layer)("ServerEnvironmentLive", (it) => {
 
         yield* secrets.set(RELAY_URL_SECRET, encode("https://relay.example"));
         const linked = yield* serverEnvironment.getDescriptor;
-        expect(linked.capabilities.agentActivityPublishing).toBe(true);
+        // t3code-disconnected: a stored link never advertises publishing while T3 Connect is disabled.
+        expect(linked.capabilities.agentActivityPublishing).toBe(T3_CONNECT_ENABLED);
 
         yield* secrets.set(PUBLISH_AGENT_ACTIVITY_SECRET, encode("false"));
         const disabled = yield* serverEnvironment.getDescriptor;

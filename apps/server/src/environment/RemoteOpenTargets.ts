@@ -1,4 +1,5 @@
 import { type RemoteOpenTarget } from "@t3tools/contracts";
+import { TAILSCALE_ENABLED } from "@t3tools/shared/disconnected";
 import * as HostProcess from "@t3tools/shared/HostProcess";
 import * as NetService from "@t3tools/shared/Net";
 import { readTailscaleSshEnabled, readTailscaleStatus } from "@t3tools/tailscale";
@@ -30,11 +31,15 @@ export const make = Effect.gen(function* () {
     );
     const username = yield* HostProcess.Username;
 
-    const magicDnsName = yield* readTailscaleStatus.pipe(
-      Effect.map((status) => status.magicDnsName),
-      Effect.orElseSucceed(() => null),
-      Effect.provideService(ChildProcessSpawner.ChildProcessSpawner, spawner),
-    );
+    // t3code-disconnected: Tailscale is disabled (DISCONNECTED.md). A null name also
+    // skips `tailscale debug prefs` below.
+    const magicDnsName = TAILSCALE_ENABLED
+      ? yield* readTailscaleStatus.pipe(
+          Effect.map((status) => status.magicDnsName),
+          Effect.orElseSucceed(() => null),
+          Effect.provideService(ChildProcessSpawner.ChildProcessSpawner, spawner),
+        )
+      : null;
 
     const targets: Array<RemoteOpenTarget> = [];
 

@@ -21,7 +21,16 @@ patched, beyond what is needed to keep the build working.
   clients (cloudflared, Tailscale). Remote access uses whatever transport you already
   have, such as [Microsoft Dev Tunnels](#remote-access-over-dev-tunnels).
 - **Easy to keep up with upstream.** Changes are small and gated in place so rebases stay
-  cheap. Whole subsystems are deleted only when they would otherwise ship tunnel clients.
+  cheap. Subsystems are switched off at their entry points rather than deleted.
+
+## The disconnected switch
+
+[`packages/shared/src/disconnected.ts`](./packages/shared/src/disconnected.ts) holds a master
+`DISCONNECTED` constant and the per-feature gates derived from it (`T3_CONNECT_ENABLED`,
+`TAILSCALE_ENABLED`). Each gate is ANDed into upstream's own switch for the feature, so no
+build value, environment variable, setting or stored secret can turn it back on. Fork patches
+are marked with a `t3code-disconnected:` comment; tests that cover upstream's enabled
+behaviour are skipped or force the gate on.
 
 ## Non-goals
 
@@ -37,15 +46,15 @@ patched, beyond what is needed to keep the build working.
 
 ## Changes
 
-### Removed from the build
+### Disabled by the disconnected switch
 
-- [ ] **T3 Connect.** The cloud relay, account linking, managed endpoints, agent-activity
+- [x] **T3 Connect.** The cloud relay, account linking, managed endpoints, agent-activity
       publishing and held-webhook wake-ups (`apps/server/src/cloud`, `apps/server/src/relay`,
       `packages/client-runtime/src/relay`).
-- [ ] **cloudflared.** Downloaded and run only for T3 Connect (`packages/shared/src/relayClient.ts`).
-- [ ] **Clerk sign-in.** Only used by T3 Connect (`apps/web/src/components/clerk`,
+- [x] **cloudflared.** Downloaded and run only for T3 Connect (`packages/shared/src/relayClient.ts`).
+- [x] **Clerk sign-in.** Only used by T3 Connect (`apps/web/src/components/clerk`,
       `apps/desktop/src/app/DesktopClerk.ts`).
-- [ ] **Tailscale integration.** It never installs Tailscale, but it runs the `tailscale`
+- [x] **Tailscale integration.** It never installs Tailscale, but it runs the `tailscale`
       command when network access or Tailscale Serve is on (`packages/tailscale`,
       `apps/desktop/src/backend/tailscaleEndpointProvider.ts`,
       `apps/server/src/environment/DirectEndpoints.ts`).

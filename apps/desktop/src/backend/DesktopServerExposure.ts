@@ -9,6 +9,7 @@ import {
   type DesktopServerExposureMode,
   type DesktopServerExposureState,
 } from "@t3tools/contracts";
+import { TAILSCALE_ENABLED } from "@t3tools/shared/disconnected";
 import { isTailscaleIpv4Address, readTailscaleStatus } from "@t3tools/tailscale";
 import * as Cache from "effect/Cache";
 import * as Context from "effect/Context";
@@ -361,7 +362,9 @@ function runtimeStateFromResolvedExposure(input: {
     httpBaseUrl: new URL(input.exposure.localHttpUrl),
     endpointUrl: Option.fromNullishOr(input.exposure.endpointUrl),
     advertisedHost: Option.fromNullishOr(input.exposure.advertisedHost),
-    tailscaleServeEnabled: input.settings.tailscaleServeEnabled,
+    // t3code-disconnected: Tailscale is disabled (DISCONNECTED.md). A persisted
+    // `tailscaleServeEnabled` from an upstream install is ignored.
+    tailscaleServeEnabled: TAILSCALE_ENABLED && input.settings.tailscaleServeEnabled,
     tailscaleServePort: input.settings.tailscaleServePort,
   };
 }
@@ -520,6 +523,10 @@ export const make = Effect.gen(function* () {
 
   const setTailscaleServeEnabled = Effect.fn("desktop.serverExposure.setTailscaleServeEnabled")(
     function* (input: { readonly enabled: boolean; readonly port?: number }) {
+      // t3code-disconnected: Tailscale is disabled (DISCONNECTED.md).
+      if (!TAILSCALE_ENABLED) {
+        return { state: toContractState(yield* Ref.get(stateRef)), requiresRelaunch: false };
+      }
       yield* Effect.annotateCurrentSpan({
         enabled: input.enabled,
         ...(input.port === undefined ? {} : { port: input.port }),
