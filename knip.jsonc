@@ -142,6 +142,11 @@
       // Generated upstream protocol definitions are retained as a complete set.
       "ignoreIssues": { "src/_generated/**": ["exports", "types"] },
     },
+    // t3code-disconnected: fake ACP agent spawned by textGeneration.test.ts.
+    "packages/provider-acp-registry": {
+      "includeEntryExports": true,
+      "entry": ["src/server/testing/*.fixture.ts"],
+    },
     "packages/effect-codex-app-server": {
       "includeEntryExports": true,
       "entry": ["test/fixtures/*.ts"],
