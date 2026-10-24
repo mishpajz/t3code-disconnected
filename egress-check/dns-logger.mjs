@@ -1,8 +1,8 @@
 // Minimal DNS server for the egress check: logs every query as a JSON line and
 // answers NXDOMAIN, so nothing resolves and every lookup is recorded.
 // Usage: node dns-logger.mjs <log-file>
-import { createSocket } from "node:dgram";
-import { appendFileSync } from "node:fs";
+import * as NodeDgram from "node:dgram";
+import * as NodeFS from "node:fs";
 
 const logFile = process.argv[2];
 const TYPES = {
@@ -29,7 +29,7 @@ function readQuestion(msg) {
   return { name: labels.join(".").toLowerCase(), type: TYPES[type] ?? String(type), end };
 }
 
-const socket = createSocket("udp4");
+const socket = NodeDgram.createSocket("udp4");
 socket.on("message", (msg, rinfo) => {
   if (msg.length < 17) return;
   let question;
@@ -38,7 +38,7 @@ socket.on("message", (msg, rinfo) => {
   } catch {
     return;
   }
-  appendFileSync(
+  NodeFS.appendFileSync(
     logFile,
     JSON.stringify({ at: new Date().toISOString(), name: question.name, type: question.type }) +
       "\n",
