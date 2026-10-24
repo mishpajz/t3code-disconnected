@@ -612,6 +612,29 @@ it.layer(NodeServices.layer)("server settings", (it) => {
       }).pipe(Effect.provide(layerServerSettings())),
   );
 
+  // t3code-disconnected: ACP Registry instances generate text (DISCONNECTED.md).
+  it.effect("keeps an ACP Registry text generation selection", () =>
+    Effect.gen(function* () {
+      const serverSettings = yield* ServerSettingsModule.ServerSettingsService;
+      const instanceId = ProviderInstanceId.make("acpRegistry_copilot");
+      const selection = { instanceId, model: "small" };
+
+      const next = yield* serverSettings.updateSettings({
+        providerInstances: {
+          [instanceId]: {
+            driver: ProviderDriverKind.make("acpRegistry"),
+            enabled: true,
+            config: { source: "local", commandPath: "copilot" },
+          },
+        },
+        textGenerationModelSelection: selection,
+      });
+
+      assert.deepEqual(next.textGenerationModelSelection, selection);
+      assert.deepEqual((yield* serverSettings.getSettings).textGenerationModelSelection, selection);
+    }).pipe(Effect.provide(layerServerSettings())),
+  );
+
   it.effect.each(["codex"])(
     "falls back to enabled instance %s after disabling the selection",
     (fallbackId) =>

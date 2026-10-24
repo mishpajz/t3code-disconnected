@@ -400,18 +400,10 @@ function migrateLegacyProviderSettings(
   };
 }
 
-const ACP_REGISTRY_DRIVER = ProviderDriverKind.make("acpRegistry");
-
-function selectionSupportsTextGeneration(
-  settings: ServerSettings,
-  selection: ModelSelection,
-): boolean {
-  return settings.providerInstances[selection.instanceId]?.driver !== ACP_REGISTRY_DRIVER;
-}
-
+// t3code-disconnected: ACP Registry selections are kept; those instances generate text
+// (DISCONNECTED.md).
 function resolveTextGenerationProvider(settings: ServerSettings): ServerSettings {
-  return isModelSelectionProviderEnabled(settings, settings.textGenerationModelSelection) &&
-    selectionSupportsTextGeneration(settings, settings.textGenerationModelSelection)
+  return isModelSelectionProviderEnabled(settings, settings.textGenerationModelSelection)
     ? settings
     : fallbackTextGenerationProvider(settings);
 }

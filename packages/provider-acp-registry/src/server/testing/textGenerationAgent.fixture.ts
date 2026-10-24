@@ -10,7 +10,7 @@ import * as EffectAcpAgent from "effect-acp/agent";
 import * as AcpError from "effect-acp/errors";
 import type * as AcpSchema from "effect-acp/schema";
 
-// reply | permission | tool | hang | empty | auth
+// reply | branch | permission | tool | hang | empty | auth
 const mode = process.env.T3_TEXT_AGENT_MODE ?? "reply";
 const logPath = process.env.T3_TEXT_AGENT_LOG;
 const sessionId = "text-session-1";
@@ -118,7 +118,11 @@ const program = Effect.gen(function* () {
             content: { type: "text", text: "Thinking about it." },
           },
         });
-        yield* message('{"title": "Title from ');
+        if (mode === "branch") {
+          yield* message('{"branch": "Fix Login ');
+        } else {
+          yield* message('{"title": "Title from ');
+        }
         yield* message(`${currentModel}"}`);
       }
       return yield* finish;
