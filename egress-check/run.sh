@@ -7,6 +7,8 @@ out=/out
 here=/app/egress-check
 idle_seconds="${EGRESS_IDLE_SECONDS:-360}"
 mkdir -p "$out"
+# The server and browser run as an unprivileged user and write here too.
+chmod 777 "$out"
 rm -f "$out"/{dns.jsonl,packets.txt,server.log,drive.log,report.json,ui.png}
 
 # Every lookup goes to our logger, which answers NXDOMAIN.
@@ -59,7 +61,7 @@ if [[ -z "$pairing_url" ]]; then
 fi
 
 su t3 -c "PLAYWRIGHT_BROWSERS_PATH=$PLAYWRIGHT_BROWSERS_PATH node $here/drive.mjs '$pairing_url' $idle_seconds $out" \
-  2>&1 | tee "$out/drive.log"
+  2>&1 | tee "$out/drive.log" || echo "The UI driver failed; reporting what was captured." >&2
 
 kill "$server_pid" 2>/dev/null || true
 sleep 2

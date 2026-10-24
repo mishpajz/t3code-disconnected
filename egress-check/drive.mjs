@@ -2,9 +2,9 @@
 // pairs through the pairing URL, opens the main screens, then stays idle so
 // background timers get a chance to fire.
 // Usage: node drive.mjs <pairing-url> <idle-seconds> <out-dir>
-import { createRequire } from "node:module";
+import * as NodeModule from "node:module";
 
-const require = createRequire("/app/apps/web/package.json");
+const require = NodeModule.createRequire("/app/apps/web/package.json");
 const { chromium } = require("playwright");
 
 const [pairingUrl, idleSecondsArg, outDir] = process.argv.slice(2);

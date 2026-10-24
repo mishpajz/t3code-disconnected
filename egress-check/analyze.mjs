@@ -1,11 +1,11 @@
 // Turns the DNS log and packet capture into a report and fails on anything not
 // in allowlist.txt.
 // Usage: node analyze.mjs <out-dir> <allowlist>
-import { readFileSync, writeFileSync, existsSync } from "node:fs";
+import * as NodeFS from "node:fs";
 
 const [outDir, allowlistPath] = process.argv.slice(2);
 const readLines = (file) =>
-  existsSync(file) ? readFileSync(file, "utf8").split("\n").filter(Boolean) : [];
+  NodeFS.existsSync(file) ? NodeFS.readFileSync(file, "utf8").split("\n").filter(Boolean) : [];
 
 const allowlist = readLines(allowlistPath)
   .map((line) => line.replace(/#.*/, "").trim())
@@ -60,7 +60,7 @@ const violations = [
     .map((entry) => `${entry.protocol.toUpperCase()} ${entry.ip}:${entry.port}`),
 ];
 
-writeFileSync(
+NodeFS.writeFileSync(
   `${outDir}/report.json`,
   JSON.stringify({ lookups: lookupList, connections: connectionList, violations }, null, 2) + "\n",
 );
