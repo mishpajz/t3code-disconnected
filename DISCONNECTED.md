@@ -109,6 +109,10 @@ enabled behaviour are skipped or force the gate on.
       `packages/shared/src/favicon.ts`, `apps/web/src/components/chat/remoteMedia.ts`).
 - [x] **Theme marketplace** (open-vsx.org): hidden; importing theme files still works
       (`THEME_MARKETPLACE_ENABLED`, `apps/web/src/openVsxThemes.ts`).
+- [x] **Prompt links** to app.t3.codes: the **Copy prompt link** button on messages and the
+      command palette's copy prompt link actions are hidden, since opening such a link sends
+      the prompt to T3's hosted app (`PROMPT_LINKS_ENABLED`,
+      `apps/web/src/components/promptLinks/copyPromptLink.ts`).
 
 ### Other changes
 

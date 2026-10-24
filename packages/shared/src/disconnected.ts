@@ -44,3 +44,6 @@ export const BITBUCKET_ENABLED = !DISCONNECTED;
 
 /** Theme marketplace backed by open-vsx.org. */
 export const THEME_MARKETPLACE_ENABLED = !DISCONNECTED;
+
+/** Copying links that open a prompt on T3's hosted app (app.t3.codes). */
+export const PROMPT_LINKS_ENABLED = !DISCONNECTED;
