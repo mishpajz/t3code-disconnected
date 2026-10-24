@@ -4,10 +4,12 @@ import { useGT, useMessages } from "gt-react";
 import { MessagesSquareIcon } from "lucide-react";
 import {
   formatHostedThreadLink,
+  formatThreadLink,
   guessThreadLinkRef,
   threadLinkCandidates,
   type ThreadLink,
 } from "@t3tools/shared/threadLinks";
+import { PROMPT_LINKS_ENABLED } from "@t3tools/shared/disconnected";
 import { unknownThreadLinkLabel } from "@t3tools/shared/threadLinksCopy";
 import { resolveLinkedThreadOpen } from "@t3tools/client-runtime/linked-thread";
 
@@ -138,7 +140,12 @@ export function MarkdownThreadLink(props: {
     <ThreadContextChip
       record={{ ...ref, title }}
       projectId={resolved?.metadata.projectId ?? null}
-      copyMarkdown={formatHostedThreadLink(ref, title, configuredHostedAppUrl())}
+      copyMarkdown={
+        // t3code-disconnected: copy a link T3 Code itself opens, not one to app.t3.codes.
+        PROMPT_LINKS_ENABLED
+          ? formatHostedThreadLink(ref, title, configuredHostedAppUrl())
+          : formatThreadLink(ref, title)
+      }
     />
   );
 }

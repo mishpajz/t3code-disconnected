@@ -1,4 +1,5 @@
 import { createAdvertisedEndpoint } from "@t3tools/shared/advertisedEndpoint";
+import { TAILSCALE_ENABLED } from "@t3tools/shared/disconnected";
 import {
   ExecutionEnvironmentDescriptor,
   type AdvertisedEndpoint,
@@ -142,8 +143,12 @@ export const resolveTailscaleAdvertisedEndpoints = Effect.fn("resolveTailscaleAd
   > {
     const readStatus =
       input.readStatus ?? readTailscaleStatus.pipe(Effect.orElseSucceed(() => null));
-    const status =
-      input.statusJson === undefined
+    // t3code-disconnected: Tailscale is disabled (DISCONNECTED.md). Without a status
+    // nothing runs `tailscale` or probes MagicDNS; tailnet IPs on the native
+    // interface are still listed, as they come from the OS interface table.
+    const status = !TAILSCALE_ENABLED
+      ? null
+      : input.statusJson === undefined
         ? yield* readStatus
         : input.statusJson
           ? yield* parseTailscaleStatus(input.statusJson).pipe(Effect.orElseSucceed(() => null))
@@ -152,7 +157,7 @@ export const resolveTailscaleAdvertisedEndpoints = Effect.fn("resolveTailscaleAd
     const magicDnsEndpoint = yield* resolveTailscaleMagicDnsAdvertisedEndpoint({
       dnsName: status?.magicDnsName ?? null,
       localHttpUrl: `http://127.0.0.1:${input.port}`,
-      serveEnabled: input.serveEnabled === true,
+      serveEnabled: TAILSCALE_ENABLED && input.serveEnabled === true,
       ...(input.servePort === undefined ? {} : { servePort: input.servePort }),
       ...(input.probe === undefined ? {} : { probe: input.probe }),
     });

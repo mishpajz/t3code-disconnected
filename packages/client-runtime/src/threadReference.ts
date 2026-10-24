@@ -4,7 +4,8 @@ import type {
   ThreadPullRequestLink,
 } from "@t3tools/contracts";
 import { threadContextRecord } from "@t3tools/shared/composerContextReferences";
-import { hostedThreadLink } from "@t3tools/shared/threadLinks";
+import { PROMPT_LINKS_ENABLED } from "@t3tools/shared/disconnected";
+import { formatThreadLink, hostedThreadLink } from "@t3tools/shared/threadLinks";
 
 import { resolveThreadCurrentPullRequestLink } from "./threadPullRequests.ts";
 import { mFallback, msg } from "gt-i18n";
@@ -36,7 +37,10 @@ export function threadChipCopyTarget(
   const record = threadContextRecord(threadRef, title);
   return {
     kind: "thread",
-    value: hostedThreadLink(threadRef, hostedAppUrl),
+    // t3code-disconnected: app.t3.codes is not used, so copy a link T3 Code itself opens.
+    value: PROMPT_LINKS_ENABLED
+      ? hostedThreadLink(threadRef, hostedAppUrl)
+      : formatThreadLink(threadRef, record.title),
     description: record.title,
     fragment: { version: 1, source: { environmentId: threadRef.environmentId }, records: [record] },
     clipboardTarget: "thread",

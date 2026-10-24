@@ -45,6 +45,13 @@ import * as DeviceService from "./DeviceService.ts";
 import * as SshDeviceHost from "./SshDeviceHost.ts";
 import { agentDeviceSession, releaseAgentDeviceSession } from "./AgentDeviceTarget.ts";
 import { ensureDeviceHub } from "./DeviceToolchain.ts";
+import { vi } from "vite-plus/test";
+
+// t3code-disconnected: these tests cover upstream's tool installer, so they turn downloads on.
+vi.mock("@t3tools/shared/disconnected", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("@t3tools/shared/disconnected")>()),
+  RUNTIME_DOWNLOADS_ENABLED: true,
+}));
 
 const decodeJson = Schema.decodeUnknownSync(Schema.fromJsonString(Schema.Unknown));
 const decodeBootError = Schema.decodeUnknownSync(Schema.fromJsonString(DeviceBootError));

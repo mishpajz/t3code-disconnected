@@ -3,6 +3,7 @@ import * as Effect from "effect/Effect";
 import * as Layer from "effect/Layer";
 import { HttpClient, HttpClientResponse } from "effect/http";
 import { ChildProcessSpawner } from "effect/process";
+import { TAILSCALE_ENABLED } from "@t3tools/shared/disconnected";
 
 import { resolveTailscaleAdvertisedEndpoints } from "./tailscaleEndpointProvider.ts";
 
@@ -16,6 +17,9 @@ const layerUnusedTailscaleExternalServices = Layer.mergeAll(
     ChildProcessSpawner.make(() => Effect.die("unexpected tailscale status process")),
   ),
 );
+
+// t3code-disconnected: Tailscale is disabled (DISCONNECTED.md), so Serve is never offered.
+const itTailscale = it.effect.skipIf(!TAILSCALE_ENABLED);
 
 const protonAndTailscaleInterfaces = {
   pvpnksintrf1: [{ address: "100.85.0.1", family: "IPv4", internal: false }],
@@ -80,7 +84,7 @@ describe("tailscale endpoint provider", () => {
       }).pipe(Effect.provide(layerUnusedTailscaleExternalServices)),
   );
 
-  it.effect("offers Tailscale HTTPS only when Serve reaches this desktop's backend", () =>
+  itTailscale("offers Tailscale HTTPS only when Serve reaches this desktop's backend", () =>
     Effect.gen(function* () {
       const magicDnsStatus = (servedEnvironmentId: string) =>
         resolveTailscaleAdvertisedEndpoints({

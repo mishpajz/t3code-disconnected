@@ -15,6 +15,13 @@ import * as ChildProcessSpawner from "effect/process/ChildProcessSpawner";
 
 import * as ProcessRunner from "../processRunner.ts";
 import * as NpmRelease from "./npmRelease.ts";
+import { vi } from "vite-plus/test";
+
+// t3code-disconnected: these tests cover upstream's lookup, so they turn release checks on.
+vi.mock("@t3tools/shared/disconnected", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("@t3tools/shared/disconnected")>()),
+  NPM_RELEASE_CHECK_ENABLED: true,
+}));
 
 const version = "0.1.5-nightly.20261030.1";
 const output = (stdout: string, code = 0): ProcessRunner.ProcessRunOutput => ({
