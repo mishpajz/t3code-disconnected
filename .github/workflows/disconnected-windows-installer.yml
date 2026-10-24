@@ -7,6 +7,9 @@ name: Disconnected Windows installer
 # or tracing configuration, has no auto-update feed, and does not embed the WSL
 # runtime (the WSL backend is unavailable; the native Windows backend is used).
 # The installer is unsigned. See DISCONNECTED.md.
+#
+# The egress check runs first and blocks the build if the server or web UI
+# makes any outbound connection (see egress-check/README.md).
 
 on:
   workflow_dispatch:
@@ -15,13 +18,50 @@ on:
         description: "App version, e.g. 0.1.0. Empty uses the version in apps/desktop/package.json."
         type: string
         default: ""
+      skip_egress_check:
+        description: "Build even if the egress check fails. Needed until the DISCONNECTED.md patches land."
+        type: boolean
+        default: false
 
 permissions:
   contents: read
 
 jobs:
+  egress:
+    name: Egress check
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+        with:
+          sparse-checkout: |
+            /*
+            !/.repos/
+            !/apps/mobile/modules/t3-terminal/Vendor/**/*.a
+          sparse-checkout-cone-mode: false
+
+      - name: Run egress check
+        id: check
+        continue-on-error: ${{ inputs.skip_egress_check }}
+        run: egress-check/check.sh 360
+
+      - name: Warn about a skipped failure
+        if: steps.check.outcome == 'failure'
+        run: echo "::warning::The egress check failed and was skipped; this installer makes outbound connections."
+
+      - name: Upload report
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: egress-check
+          path: egress-check/out/
+          if-no-files-found: ignore
+          retention-days: 30
+
   build:
     name: Build Windows x64 installer
+    needs: egress
     runs-on: windows-latest
     timeout-minutes: 60
     steps:

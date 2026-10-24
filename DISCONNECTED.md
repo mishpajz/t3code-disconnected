@@ -81,7 +81,7 @@ patched, beyond what is needed to keep the build working.
       `copilot` (`packages/provider-acp-registry/src/server/adapter.ts`).
 - [x] **Egress check.** Runs the server and web UI with no route to the internet and
       records every DNS lookup and connection attempt ([`egress-check/`](./egress-check/README.md)).
-      Also runs in CI.
+      Runs before every Windows installer build.
 - [ ] **Source check script.** Lists outbound URLs and tunnel or VPN tool names in the
       source, to catch calls the egress check doesn't exercise.
 
@@ -136,11 +136,11 @@ enabled; check the Actions tab after a rebase and disable any new ones with
 
 The fork's own workflows run on GitHub-hosted runners and are prefixed `disconnected-`:
 
-| Workflow                             | Runs on                                                      | What it does                                                                      |
-| ------------------------------------ | ------------------------------------------------------------ | --------------------------------------------------------------------------------- |
-| `disconnected-ci.yml`                | Pull requests and pushes to `main`, except docs-only changes | Lint, build and typecheck, and tests for the desktop scope                        |
-| `disconnected-windows-tests.yml`     | Manual                                                       | Tests on Windows, for the whole repo or one package                               |
-| `disconnected-windows-installer.yml` | Manual                                                       | Builds the Windows x64 installer and attaches it to the run; nothing is published |
+| Workflow                             | Runs on                                                      | What it does                                                                                                  |
+| ------------------------------------ | ------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------- |
+| `disconnected-ci.yml`                | Pull requests and pushes to `main`, except docs-only changes | Lint, build and typecheck, and tests for the desktop scope                                                    |
+| `disconnected-windows-tests.yml`     | Manual                                                       | Tests on Windows, for the whole repo or one package                                                           |
+| `disconnected-windows-installer.yml` | Manual                                                       | Runs the egress check, then builds the Windows x64 installer and attaches it to the run; nothing is published |
 
 The Windows installer is built without T3 Connect, Clerk or relay configuration, without an
 auto-update feed, and without the WSL runtime. It is **unsigned**.
