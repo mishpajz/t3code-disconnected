@@ -12,8 +12,13 @@ $logs = "$env:USERPROFILE\.t3\worker-logs"
 New-Item -ItemType Directory -Force $logs | Out-Null
 
 # The t3 command the desktop app installs (Settings -> General -> t3 command).
+# `cmd /c` strips the first and last quote of its command line, so the whole
+# line is wrapped in one more pair of quotes.
+$t3 = "$env:USERPROFILE\.t3\bin\t3.cmd"
+if (-not (Test-Path $t3)) { throw "$t3 not found. Install the t3 command from the desktop app first." }
+if (-not (Test-Path $Repos)) { throw "Repos folder $Repos not found. Pass -Repos <folder>." }
 Start-Process -WindowStyle Hidden -FilePath "cmd.exe" `
-  -ArgumentList "/c", "`"$env:USERPROFILE\.t3\bin\t3.cmd`" serve --host 127.0.0.1 --port $Port `"$Repos`"" `
+  -ArgumentList "/c", "`"`"$t3`" serve --host 127.0.0.1 --port $Port `"$Repos`"`"" `
   -RedirectStandardOutput "$logs\t3-$Port.log" -RedirectStandardError "$logs\t3-$Port.err.log"
 
 Start-Process -WindowStyle Hidden -FilePath "devtunnel" -ArgumentList "host", $Tunnel `
