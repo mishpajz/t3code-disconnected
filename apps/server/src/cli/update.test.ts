@@ -748,3 +748,8 @@ it.layer(NodeServices.layer)("t3 update checks the database before switching", (
     ),
   );
 });
+// t3code-disconnected: preserve upstream enabled behavior; disabled behavior has focused coverage.
+vi.mock("@t3tools/shared/disconnected", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("@t3tools/shared/disconnected")>()),
+  RUNTIME_DOWNLOADS_ENABLED: true,
+}));

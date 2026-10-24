@@ -2,6 +2,7 @@ import {
   clerkFrontendApiHostnameFromPublishableKey,
   relayClerkTokenOptions,
 } from "@t3tools/shared/relayAuth";
+import { T3_CONNECT_ENABLED } from "@t3tools/shared/disconnected";
 import { normalizeSecureRelayUrl } from "@t3tools/shared/relayUrl";
 import * as Schema from "effect/Schema";
 
@@ -40,7 +41,18 @@ function normalizeSecureUrl(value: string): string | null {
   }
 }
 
+// t3code-disconnected: T3 Connect is disabled (DISCONNECTED.md). With no Clerk key, JWT
+// template, relay URL or relay tracing, every consumer treats T3 Connect as unconfigured, so
+// Clerk never loads and nothing contacts the relay, even if a build injects the values.
+const DISABLED_CLOUD_PUBLIC_CONFIG: CloudPublicConfig = {
+  clerkPublishableKey: null,
+  clerkJwtTemplate: null,
+  relayUrl: null,
+  relayTracing: { tracesUrl: null, tracesDataset: null, tracesToken: null },
+};
+
 export function resolveCloudPublicConfig(): CloudPublicConfig {
+  if (!T3_CONNECT_ENABLED) return DISABLED_CLOUD_PUBLIC_CONFIG;
   return {
     clerkPublishableKey: trimNonEmpty(
       import.meta.env.VITE_CLERK_PUBLISHABLE_KEY as string | undefined,

@@ -1,4 +1,5 @@
 import { thrownErrorMessage } from "@t3tools/client-runtime/errors";
+import { RUNTIME_DOWNLOADS_ENABLED } from "@t3tools/shared/disconnected";
 import { useAtomValue } from "@effect/atom-react";
 import {
   AuthEnvironmentMaintainScope,
@@ -390,6 +391,15 @@ export function ServerUpdateAction({
     return (
       <span className="text-muted-foreground text-xs">
         <T>Update the desktop app on that machine to update this server.</T>
+      </span>
+    );
+  }
+
+  // t3code-disconnected: the copied npm/npx commands would install upstream t3 from npm.
+  if (selfUpdate === null && !RUNTIME_DOWNLOADS_ENABLED) {
+    return (
+      <span className="text-muted-foreground text-xs">
+        Install the matching T3 Code build on that machine to update this server.
       </span>
     );
   }

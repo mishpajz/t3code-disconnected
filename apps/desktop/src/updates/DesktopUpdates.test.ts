@@ -1,6 +1,7 @@
 import * as NodeModule from "node:module";
 
 import { assert, describe, it } from "@effect/vitest";
+import { vi } from "vite-plus/test";
 import { DESKTOP_UPDATE_RESTART_MARKER_FILE, DesktopUpdateStateSchema } from "@t3tools/contracts";
 import { computeReleaseNotes } from "electron-updater/out/providers/GitHubProvider.js";
 import * as Cause from "effect/Cause";
@@ -78,6 +79,14 @@ const stableUpdateInfo = (
     ),
   };
 };
+// t3code-disconnected: these tests cover upstream's updater, so they turn auto-update on.
+const disconnectedGate = vi.hoisted(() => ({ desktopAutoUpdateEnabled: true }));
+vi.mock("@t3tools/shared/disconnected", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("@t3tools/shared/disconnected")>()),
+  get DESKTOP_AUTO_UPDATE_ENABLED() {
+    return disconnectedGate.desktopAutoUpdateEnabled;
+  },
+}));
 
 describe("DesktopUpdates", () => {
   it.effect("updates Linux .deb installs and leaves other non-AppImage installs off", () =>
@@ -104,6 +113,26 @@ describe("DesktopUpdates", () => {
       assert.isFalse(unmarked.canInstallUpdates);
     }),
   );
+
+  it.effect("t3code-disconnected: never checks the release feed", () => {
+    disconnectedGate.desktopAutoUpdateEnabled = false;
+    const harness = makeHarness();
+
+    return Effect.scoped(
+      Effect.gen(function* () {
+        const updates = yield* DesktopUpdates.DesktopUpdates;
+        yield* updates.configure;
+        const state = yield* updates.getState;
+        assert.equal(state.status, "disabled");
+        assert.equal(state.message, "Automatic updates are turned off in this build.");
+        yield* updates.check("menu");
+        assert.equal(harness.checkCount(), 0);
+      }),
+    ).pipe(
+      Effect.provide(harness.layer),
+      Effect.ensuring(Effect.sync(() => (disconnectedGate.desktopAutoUpdateEnabled = true))),
+    );
+  });
 
   it.effect("keeps the disabled reason available after configuration and channel changes", () => {
     const harness = makeHarness({ env: { T3CODE_DISABLE_AUTO_UPDATE: "true" } });

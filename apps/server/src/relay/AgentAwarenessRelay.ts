@@ -22,6 +22,7 @@ import {
 import { turnItemUpdateCanEndBackgroundWork } from "@t3tools/shared/orchestrationV2PendingBackgroundWork";
 import { makeDrainableWorker } from "@t3tools/shared/DrainableWorker";
 import { withRelayClientTracing } from "@t3tools/shared/relayTracing";
+import { T3_CONNECT_ENABLED } from "@t3tools/shared/disconnected";
 import { normalizeRelayIssuer, RELAY_ACTIVITY_PUBLISH_TYP } from "@t3tools/shared/relayJwt";
 import * as Cause from "effect/Cause";
 import * as Context from "effect/Context";
@@ -1003,4 +1004,21 @@ export const make = Effect.gen(function* () {
   });
 });
 
-export const layer = Layer.effect(AgentAwarenessRelay, make);
+// t3code-disconnected: T3 Connect is disabled (DISCONNECTED.md), so agent activity is never
+// published to the relay, whatever link secrets are stored.
+const disabled = AgentAwarenessRelay.of({
+  publishThread: Effect.fn("AgentAwarenessRelay.publishThread")(function () {
+    return Effect.void;
+  }),
+  drain: Effect.void,
+  requestCatchUp: Effect.fn("AgentAwarenessRelay.requestCatchUp")(function () {
+    return Effect.void;
+  }),
+  start: Effect.fn("AgentAwarenessRelay.start")(function () {
+    return Effect.void;
+  }),
+});
+
+export const layer = T3_CONNECT_ENABLED
+  ? Layer.effect(AgentAwarenessRelay, make)
+  : Layer.succeed(AgentAwarenessRelay, disabled);

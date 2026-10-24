@@ -6,6 +6,7 @@ import * as NodePath from "node:path";
 
 import * as NodeCrypto from "@effect/platform-node/NodeCrypto";
 import * as NodeServices from "@effect/platform-node/NodeServices";
+import { TAILSCALE_ENABLED } from "@t3tools/shared/disconnected";
 import { AuthStandardClientScopes, ORCHESTRATION_PROTOCOL_VERSION } from "@t3tools/contracts";
 import * as NetService from "@t3tools/shared/Net";
 import * as HostProcess from "@t3tools/shared/HostProcess";
@@ -57,6 +58,10 @@ const baseState = {
   origin: "http://127.0.0.1:3773",
   startedAt: "2026-06-20T00:00:00.000Z",
 } as const satisfies PersistedServerRuntimeState;
+
+// t3code-disconnected: Tailscale is disabled (DISCONNECTED.md). These cover upstream
+// behaviour that only runs with Tailscale enabled.
+const itTailscale = it.effect.skipIf(!TAILSCALE_ENABLED);
 
 describe("pair tailscale local target", () => {
   it("proxies the dev web port for dev servers", () => {
@@ -134,7 +139,7 @@ const withDescriptorServer = <A, E, R>(
   );
 
 describe("t3 pair", () => {
-  it.effect("publishes an IPv6-only server through Tailscale Serve when pairing", () =>
+  itTailscale("publishes an IPv6-only server through Tailscale Serve when pairing", () =>
     withDescriptorServer(
       (origin) =>
         Effect.gen(function* () {
@@ -204,7 +209,7 @@ describe("t3 pair", () => {
 
   // The MagicDNS probe fails whenever the host cannot reach its own *.ts.net name,
   // so it cannot be what decides that the port is free.
-  it.effect(
+  itTailscale(
     "leaves another app's Serve route alone when the host cannot reach its MagicDNS URL",
     () =>
       withDescriptorServer((origin) =>
@@ -283,6 +288,32 @@ describe("t3 pair", () => {
       ).pipe(Effect.provide(layerCliRuntime)),
   );
 
+  // t3code-disconnected: Tailscale is disabled (DISCONNECTED.md).
+  it.effect("refuses --tailscale without running tailscale", () =>
+    withDescriptorServer((origin) =>
+      Effect.gen(function* () {
+        const baseDir = NodeFS.mkdtempSync(NodePath.join(NodeOS.tmpdir(), "t3-pair-ts-off-test-"));
+        yield* persistServerRuntimeState({
+          path: NodePath.join(baseDir, "userdata", "server-runtime.json"),
+          state: yield* makePersistedServerRuntimeState({
+            config: { host: "127.0.0.1", devUrl: undefined },
+            port: Number(new URL(origin).port),
+          }),
+        });
+        const error = yield* provideCliTestLayers(
+          runCli(["pair", "--base-dir", baseDir, "--tailscale"]).pipe(
+            Effect.provideService(
+              ChildProcessSpawner.ChildProcessSpawner,
+              ChildProcessSpawner.make(() => Effect.die("unexpected tailscale process")),
+            ),
+            Effect.flip,
+          ),
+        );
+        assert.include(String(error), "Tailscale support is disabled in this build.");
+      }),
+    ).pipe(Effect.provide(NodeServices.layer)),
+  );
+
   it.effect("mints a token and prints a QR pairing URL for a live server", () =>
     withDescriptorServer((origin) =>
       Effect.gen(function* () {
@@ -358,48 +389,52 @@ describe("t3 pair", () => {
     ).pipe(Effect.provide(Layer.mergeAll(NodeServices.layer, NodeCrypto.layer))),
   );
 
-  it.effect("refuses --tailscale before turning on Serve when the policy keeps clients local", () =>
-    withDescriptorServer((origin) =>
-      Effect.gen(function* () {
-        const baseDir = NodeFS.mkdtempSync(NodePath.join(NodeOS.tmpdir(), "t3-pair-policy-test-"));
-        const policyPath = NodePath.join(baseDir, "policy.json");
-        NodeFS.writeFileSync(
-          policyPath,
-          JSON.stringify({
-            schemaVersion: 1,
-            organization: "Example Corp",
-            limits: { clients: ["desktop", "local-browser"] },
-          }),
-        );
-        yield* persistServerRuntimeState({
-          path: NodePath.join(baseDir, "userdata", "server-runtime.json"),
-          state: yield* makePersistedServerRuntimeState({
-            config: { host: "127.0.0.1", devUrl: undefined },
-            port: Number(new URL(origin).port),
-          }),
-        });
+  itTailscale(
+    "refuses --tailscale before turning on Serve when the policy keeps clients local",
+    () =>
+      withDescriptorServer((origin) =>
+        Effect.gen(function* () {
+          const baseDir = NodeFS.mkdtempSync(
+            NodePath.join(NodeOS.tmpdir(), "t3-pair-policy-test-"),
+          );
+          const policyPath = NodePath.join(baseDir, "policy.json");
+          NodeFS.writeFileSync(
+            policyPath,
+            JSON.stringify({
+              schemaVersion: 1,
+              organization: "Example Corp",
+              limits: { clients: ["desktop", "local-browser"] },
+            }),
+          );
+          yield* persistServerRuntimeState({
+            path: NodePath.join(baseDir, "userdata", "server-runtime.json"),
+            state: yield* makePersistedServerRuntimeState({
+              config: { host: "127.0.0.1", devUrl: undefined },
+              port: Number(new URL(origin).port),
+            }),
+          });
 
-        const error = yield* provideCliTestLayers(
-          runCli(["pair", "--base-dir", baseDir, "--tailscale"]).pipe(
-            Effect.provideService(
-              ChildProcessSpawner.ChildProcessSpawner,
-              ChildProcessSpawner.make(() => Effect.die("tailscale must not run")),
-            ),
-            Effect.provide(
-              ConfigProvider.layer(
-                ConfigProvider.fromEnv({ env: { T3CODE_DEV_MANAGED_POLICY_PATH: policyPath } }),
+          const error = yield* provideCliTestLayers(
+            runCli(["pair", "--base-dir", baseDir, "--tailscale"]).pipe(
+              Effect.provideService(
+                ChildProcessSpawner.ChildProcessSpawner,
+                ChildProcessSpawner.make(() => Effect.die("tailscale must not run")),
               ),
+              Effect.provide(
+                ConfigProvider.layer(
+                  ConfigProvider.fromEnv({ env: { T3CODE_DEV_MANAGED_POLICY_PATH: policyPath } }),
+                ),
+              ),
+              Effect.flip,
             ),
-            Effect.flip,
-          ),
-        );
+          );
 
-        assert.include(
-          String(error),
-          "Example Corp's policy does not allow remote clients, so Tailscale Serve cannot be turned on.",
-        );
-      }),
-    ).pipe(Effect.provide(NodeServices.layer)),
+          assert.include(
+            String(error),
+            "Example Corp's policy does not allow remote clients, so Tailscale Serve cannot be turned on.",
+          );
+        }),
+      ).pipe(Effect.provide(NodeServices.layer)),
   );
 
   it.effect("ignores runtime state whose recorded pid is no longer alive", () =>
@@ -511,7 +546,7 @@ describe("t3 pair", () => {
 
   // Without the capability `tailscale serve` blocks on an enablement URL, so
   // pairing must stop at status instead of spawning it.
-  it.effect("explains a tailnet without HTTPS serve instead of running tailscale serve", () =>
+  itTailscale("explains a tailnet without HTTPS serve instead of running tailscale serve", () =>
     withDescriptorServer((origin) =>
       Effect.gen(function* () {
         const baseDir = NodeFS.mkdtempSync(NodePath.join(NodeOS.tmpdir(), "t3-pair-ts-test-"));
@@ -563,7 +598,7 @@ describe("t3 pair", () => {
 
   // regression: #35517 - the macOS Tailscale apps refuse Serve targets other than
   // localhost, 127.0.0.1 and ::1, so a specific bind needs an explanation.
-  it.effect("names the bind address when Tailscale refuses it as a Serve target", () =>
+  itTailscale("names the bind address when Tailscale refuses it as a Serve target", () =>
     Effect.gen(function* () {
       const baseDir = NodeFS.mkdtempSync(NodePath.join(NodeOS.tmpdir(), "t3-pair-remote-"));
       yield* persistServerRuntimeState({
@@ -629,7 +664,7 @@ describe("t3 pair", () => {
 
   // regression: #37459 - on Linux without an operator, tailscaled refuses Serve config
   // from a normal user, and the CLI must say how to fix it.
-  it.effect("explains the operator fix when Tailscale denies the Serve config", () =>
+  itTailscale("explains the operator fix when Tailscale denies the Serve config", () =>
     Effect.gen(function* () {
       const baseDir = NodeFS.mkdtempSync(NodePath.join(NodeOS.tmpdir(), "t3-pair-remote-"));
       yield* persistServerRuntimeState({
