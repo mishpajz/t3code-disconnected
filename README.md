@@ -1,3 +1,10 @@
+> [!NOTE]
+> **This is `t3code-disconnected`, a fork of [T3 Code](https://github.com/pingdotgg/t3code)** that aims to
+> create a version that does not call home: no telemetry, no update checks, no T3 Connect, and no downloads
+> from third-party servers. It is meant for restricted environments where data must stay inside the network
+> boundary. See [DISCONNECTED.md](./DISCONNECTED.md) for what changes and why. Everything below is the
+> upstream README.
+
 <p align="center">
   <a href="https://t3.codes">
     <img src="./assets/prod/t3-black-web-icon-192x192.png" width="80" height="80" alt="T3 Code logo" />
