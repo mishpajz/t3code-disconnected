@@ -1,3 +1,4 @@
+import { vi } from "vite-plus/test";
 import * as NodeServices from "@effect/platform-node/NodeServices";
 import { expect, it } from "@effect/vitest";
 import { ServerSelfUpdateError, ThreadId } from "@t3tools/contracts";
@@ -472,3 +473,6 @@ it.layer(NodeServices.layer)("pruning runtimes on start", (it) => {
     }),
   );
 });
+
+// t3code-disconnected: preserve upstream enabled behavior; disabled behavior has focused coverage.
+vi.mock("@t3tools/shared/disconnected", () => ({ RUNTIME_DOWNLOADS_ENABLED: true }));

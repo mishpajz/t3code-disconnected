@@ -1,3 +1,4 @@
+import { vi } from "vite-plus/test";
 import * as NodeServices from "@effect/platform-node/NodeServices";
 import { expect, it } from "@effect/vitest";
 import * as HostProcess from "@t3tools/shared/HostProcess";
@@ -864,3 +865,6 @@ it.layer(NodeServices.layer)("boot service install", (it) => {
     }),
   );
 });
+
+// t3code-disconnected: preserve upstream enabled behavior; disabled behavior has focused coverage.
+vi.mock("@t3tools/shared/disconnected", () => ({ RUNTIME_DOWNLOADS_ENABLED: true }));

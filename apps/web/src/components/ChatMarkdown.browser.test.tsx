@@ -10,6 +10,12 @@ import { filesystemEnvironment } from "../state/filesystem";
 import { useRightPanelStore } from "../rightPanelStore";
 import { setMarkdownTaskChecked } from "./files/filePreviewMode";
 
+// t3code-disconnected: these tests cover upstream's remote favicons and markdown media.
+vi.mock(import("@t3tools/shared/disconnected"), async (original) => ({
+  ...(await original()),
+  REMOTE_FAVICONS_ENABLED: true,
+}));
+
 const { workspaceSearch, filesystemMetadata } = vi.hoisted(() => ({
   workspaceSearch: vi.fn(),
   filesystemMetadata: vi.fn(),

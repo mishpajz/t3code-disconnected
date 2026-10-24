@@ -1,4 +1,5 @@
 import { isPublicFaviconHost } from "./hostClassification.ts";
+import { REMOTE_FAVICONS_ENABLED } from "./disconnected.ts";
 
 function faviconUrlForPage(rawUrl: string | null | undefined, _size = 32): string | null {
   if (!rawUrl || rawUrl.length > 4096) return null;
@@ -56,6 +57,8 @@ export function toolActivityFaviconUrl(
   appearance: "light" | "dark",
   size = 32,
 ): string | null {
+  // t3code-disconnected: provider events must not load remote site or CDN icons.
+  if (!REMOTE_FAVICONS_ENABLED) return null;
   if (appearance === "dark") {
     return (
       explicitFaviconUrl(icon.faviconUrlDark) ??
@@ -72,6 +75,8 @@ export function toolActivityFaviconUrl(
 }
 
 export function faviconUrlForOrigin(rawUrl: string | null | undefined, size = 32): string | null {
+  // t3code-disconnected: use the caller's local fallback instead of Google's favicon service.
+  if (!REMOTE_FAVICONS_ENABLED) return null;
   if (!rawUrl) return null;
   try {
     const url = new URL(rawUrl);

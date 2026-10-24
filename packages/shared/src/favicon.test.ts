@@ -1,6 +1,9 @@
-import { describe, expect, it } from "@effect/vitest";
+import { describe, expect, it, vi } from "vite-plus/test";
 
 import { faviconUrlForOrigin, toolActivityFaviconUrl } from "./favicon.ts";
+
+// t3code-disconnected: these tests cover upstream's remote favicons.
+vi.mock("@t3tools/shared/disconnected", () => ({ REMOTE_FAVICONS_ENABLED: true }));
 
 describe("faviconUrlForOrigin", () => {
   it("sends only the public hostname and requested size, never the port", () => {

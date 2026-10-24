@@ -2,6 +2,7 @@ import type {
   DesktopSshEnvironmentBootstrap,
   DesktopSshEnvironmentTarget,
 } from "@t3tools/contracts";
+import { RUNTIME_DOWNLOADS_ENABLED } from "@t3tools/shared/disconnected";
 import { waitForHttpReady as waitForHttpReadyShared } from "@t3tools/shared/httpReadiness";
 import { cliReleaseDownloadBaseUrl } from "@t3tools/shared/cliRelease";
 import * as KeyedLock from "@t3tools/shared/KeyedLock";
@@ -439,6 +440,7 @@ if [ -n "$T3_NODE_SCRIPT_PATH" ]; then
   fi
   exec node "$T3_NODE_SCRIPT_PATH" "$@"
 fi
+@@T3_LOCAL_RUNNER_SCRIPT@@
 T3_ARCHIVE_VERSION=@@T3_ARCHIVE_VERSION@@
 if [ -z "$T3_ARCHIVE_VERSION" ]; then
   printf 'No t3 release version was provided for the remote runtime.\\n' >&2
@@ -801,7 +803,7 @@ export class SshMissingRunnerError extends Schema.TaggedError<SshMissingRunnerEr
 export function buildRemoteT3RunnerScript(input?: RemoteT3RunnerOptions): string {
   const nodeScriptPath = input?.nodeScriptPath?.trim() || "";
   const archiveVersion = input?.archiveVersion?.trim() || "";
-  if (nodeScriptPath === "" && archiveVersion === "") {
+  if (RUNTIME_DOWNLOADS_ENABLED && nodeScriptPath === "" && archiveVersion === "") {
     throw new SshMissingRunnerError();
   }
   if (archiveVersion !== "" && !EXACT_ARCHIVE_VERSION.test(archiveVersion)) {
@@ -813,6 +815,19 @@ export function buildRemoteT3RunnerScript(input?: RemoteT3RunnerOptions): string
   );
   return stripTrailingNewlines(
     applyScriptPlaceholders(REMOTE_RUNNER_SCRIPT, {
+      // t3code-disconnected: use the remote host's installed CLI, with no registry/archive fallback.
+      T3_LOCAL_RUNNER_SCRIPT: RUNTIME_DOWNLOADS_ENABLED
+        ? ""
+        : `
+prepend_path_if_dir "$HOME/bin"
+prepend_path_if_dir "$HOME/.local/bin"
+export PATH
+if command -v t3 >/dev/null 2>&1; then
+  exec t3 "$@"
+fi
+printf 'Runtime downloads are disabled in this build. Install t3 manually on the remote host and put it on PATH.\\n' >&2
+exit 1
+`,
       T3_NODE_SCRIPT_PATH: shellSingleQuote(nodeScriptPath),
       T3_ARCHIVE_VERSION: shellSingleQuote(archiveVersion),
       T3_RELEASE_BASE_URL: shellSingleQuote(releaseBaseUrl),

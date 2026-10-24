@@ -1,3 +1,4 @@
+import { vi } from "vite-plus/test";
 import * as NodeServices from "@effect/platform-node/NodeServices";
 import { ORCHESTRATION_PROTOCOL_VERSION } from "@t3tools/contracts";
 import { expect, it } from "@effect/vitest";
@@ -20,6 +21,12 @@ import {
 } from "../cloud/config.ts";
 import * as ServerConfig from "../config.ts";
 import * as ServerEnvironment from "./ServerEnvironment.ts";
+
+// t3code-disconnected: retain upstream install ownership coverage with self-updates enabled.
+vi.mock("@t3tools/shared/disconnected", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("@t3tools/shared/disconnected")>()),
+  RUNTIME_DOWNLOADS_ENABLED: true,
+}));
 
 const layerServerEnvironment = (baseDir: string) =>
   ServerEnvironment.layer.pipe(
