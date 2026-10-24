@@ -112,8 +112,8 @@ git rebase upstream/main
 
 `upstream` is fetch-only in this clone (`git remote set-url --push upstream no-push`).
 
-This fork is based on the upstream source as audited at commit
-[`bb7783e`](https://github.com/pingdotgg/t3code/commit/bb7783e295506ad423f527ed28a019836e331e8c).
+The list of outbound calls above comes from an audit of upstream at commit
+[`bb7783e`](https://github.com/pingdotgg/t3code/commit/bb7783e295506ad423f527ed28a019836e331e8c); the fork itself started from a slightly newer `main`.
 After each rebase, rerun the outbound check and review anything new.
 
 ## License
