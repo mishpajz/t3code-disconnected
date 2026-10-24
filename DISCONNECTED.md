@@ -25,12 +25,16 @@ patched, beyond what is needed to keep the build working.
 
 ## The disconnected switch
 
-[`packages/shared/src/disconnected.ts`](./packages/shared/src/disconnected.ts) holds a master
-`DISCONNECTED` constant and the per-feature gates derived from it (`T3_CONNECT_ENABLED`,
-`TAILSCALE_ENABLED`). Each gate is ANDed into upstream's own switch for the feature, so no
-build value, environment variable, setting or stored secret can turn it back on. Fork patches
-are marked with a `t3code-disconnected:` comment; tests that cover upstream's enabled
-behaviour are skipped or force the gate on.
+[`packages/contracts/src/disconnected.ts`](./packages/contracts/src/disconnected.ts) holds the
+master `DISCONNECTED` constant, in contracts so settings defaults can follow it
+(`PROVIDER_UPDATE_CHECKS_DEFAULT`).
+[`packages/shared/src/disconnected.ts`](./packages/shared/src/disconnected.ts) holds the
+per-feature gates derived from it (`T3_CONNECT_ENABLED`, `TAILSCALE_ENABLED`,
+`ANALYTICS_ENABLED`, `DESKTOP_AUTO_UPDATE_ENABLED`). Each gate is ANDed into upstream's own
+switch for the feature, so no build value, environment variable, setting or stored secret can
+turn it back on. Defaults only change what a fresh install starts with; users can still opt
+in. Fork patches are marked with a `t3code-disconnected:` comment; tests that cover upstream's
+enabled behaviour are skipped or force the gate on.
 
 ## Non-goals
 
@@ -61,15 +65,20 @@ behaviour are skipped or force the gate on.
 
 ### Turned off by default
 
-- [ ] **Product analytics** (PostHog at `ingest.t3.codes`): forced off
+- [x] **Product analytics** (PostHog at `ingest.t3.codes`): forced off by
+      `ANALYTICS_ENABLED`, even with `T3CODE_TELEMETRY_ENABLED=true`
       (`apps/server/src/telemetry/AnalyticsService.ts`).
-- [ ] **Desktop auto-update checks** against GitHub releases: off
+- [x] **Desktop auto-update checks** against GitHub releases: forced off by
+      `DESKTOP_AUTO_UPDATE_ENABLED`; the updater reports itself disabled and never checks
       (`apps/desktop/src/updates/DesktopUpdates.ts`).
-- [ ] **Model list download** from GitHub and **provider version checks**:
-      `enableProviderUpdateChecks` defaults to `false`
-      (`apps/server/src/provider/ModelManifest.ts`,
-      `packages/provider-core/src/server/maintenanceResolver.ts`).
-- [ ] **OpenTelemetry export**: stays unconfigured; no endpoints are baked into builds.
+- [x] **Model list download** from GitHub and **provider version checks**:
+      `enableProviderUpdateChecks` defaults to `false` and can be turned on in
+      **Settings → Maintenance** (`packages/contracts/src/settings.ts`,
+      `apps/server/src/provider/ModelManifest.ts`). Updating a provider from Settings still
+      looks up its latest version, since you start that yourself.
+- [x] **OpenTelemetry export**: stays unconfigured; no endpoints are baked into builds. The
+      only build-time OTLP endpoint is for relay tracing, which is off with T3 Connect. Export
+      to a receiver you configure in **Settings → General → Diagnostics** still works.
 
 ### Patched to stay local
 

@@ -1,4 +1,5 @@
 import { assert, describe, it } from "@effect/vitest";
+import { vi } from "vite-plus/test";
 import type {
   DesktopTelemetryRequestDesktopUpdate,
   DesktopTelemetryCommitDesktopUpdate,
@@ -21,6 +22,9 @@ import * as DesktopTelemetryPublisher from "../telemetry/DesktopTelemetryPublish
 import * as DesktopRemoteUpdates from "./DesktopRemoteUpdates.ts";
 import * as DesktopUpdates from "./DesktopUpdates.ts";
 import { makeHarness } from "./updatesTestHarness.ts";
+
+// t3code-disconnected: these tests cover upstream's updater, so they turn auto-update on.
+vi.mock("@t3tools/shared/disconnected", () => ({ DESKTOP_AUTO_UPDATE_ENABLED: true }));
 
 // Updater runPromise handlers need real microtasks between test-runtime fiber yields.
 const settle = Effect.gen(function* () {
