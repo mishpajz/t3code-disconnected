@@ -1,5 +1,9 @@
 # Product usage data
 
+> [!NOTE]
+> In t3code-disconnected, product usage events are never sent and relay tracing is off, whatever
+> `T3CODE_TELEMETRY_ENABLED` says. See [DISCONNECTED.md](../../DISCONNECTED.md).
+
 The T3 Code server sends product usage events to T3 Code's own endpoint at `ingest.t3.codes`,
 associated with a hashed random identifier for the installation. To count how many installations one person
 uses, the server also sends a hashed identifier for your T3 Connect account when you are signed in

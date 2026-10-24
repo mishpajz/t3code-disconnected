@@ -2,6 +2,13 @@ import { afterEach, describe, expect, it, vi } from "vite-plus/test";
 
 import { buildConnectCliClerkAuthorizeUrl, connectCliSignInRedirectUrl } from "./connectCliAuth";
 
+// t3code-disconnected: these tests cover upstream's T3 Connect config; the fork gate is
+// covered in publicConfig.disconnected.test.ts.
+vi.mock("@t3tools/shared/disconnected", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("@t3tools/shared/disconnected")>()),
+  T3_CONNECT_ENABLED: true,
+}));
+
 const TEST_PUBLISHABLE_KEY = `pk_test_${btoa("witty-mole-42.clerk.accounts.dev$")}`;
 
 describe("connectCliAuth", () => {

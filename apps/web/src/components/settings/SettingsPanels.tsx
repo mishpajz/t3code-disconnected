@@ -32,6 +32,7 @@ import {
   managedUpdatesMessage,
 } from "@t3tools/client-runtime/contract-labels";
 import { desktopUpdateChannelOf } from "@t3tools/shared/cliRelease";
+import { ANALYTICS_ENABLED, NPM_RELEASE_CHECK_ENABLED } from "@t3tools/shared/disconnected";
 import { createModelSelection, pickModelSelection } from "@t3tools/shared/model";
 import { resolvePastedPath } from "@t3tools/shared/path";
 import * as Equal from "effect/Equal";
@@ -364,7 +365,8 @@ function AboutVersionSection() {
           </Tooltip>
         }
       />
-      {hasDesktopBridge ? (
+      {/* t3code-disconnected: the track switch needs npm release lookups (DISCONNECTED.md). */}
+      {hasDesktopBridge && NPM_RELEASE_CHECK_ENABLED ? (
         <SettingsRow
           {...setting("update-track")}
           description={
@@ -2584,10 +2586,13 @@ export function AboutSettingsPanel() {
       <SettingsSection id="legal" title={gt("Legal")}>
         <SettingsRow
           {...setting("privacy-policy")}
+          // t3code-disconnected: product analytics are forced off (DISCONNECTED.md).
           description={
-            telemetryOff === undefined
-              ? gt("How we handle your data, including the anonymous usage data T3 Code collects.")
-              : gt("How we handle your data. {telemetryOff}", { telemetryOff })
+            !ANALYTICS_ENABLED
+              ? gt("How upstream T3 Code handles your data. This build collects no usage data.")
+              : telemetryOff === undefined
+                ? gt("How we handle your data, including the anonymous usage data T3 Code collects.")
+                : gt("How we handle your data. {telemetryOff}", { telemetryOff })
           }
           control={
             <Button

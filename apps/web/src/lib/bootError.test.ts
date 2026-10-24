@@ -8,6 +8,12 @@ import {
   updateActionFor,
 } from "./bootError";
 
+// t3code-disconnected: these tests cover upstream's npx fallback.
+vi.mock("@t3tools/shared/disconnected", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("@t3tools/shared/disconnected")>()),
+  RUNTIME_DOWNLOADS_ENABLED: true,
+}));
+
 const desktopWith = (getState: () => Promise<DesktopCliCommandState>) =>
   ({ cliCommand: { getState } }) as unknown as DesktopBridge;
 

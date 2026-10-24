@@ -1,6 +1,7 @@
 import { msg } from "gt-react";
 import { managedCapabilityDenial } from "@t3tools/client-runtime/contract-labels";
 import { useAuth } from "@clerk/react";
+import { T3_CONNECT_ENABLED } from "@t3tools/shared/disconnected";
 import { Link } from "@tanstack/react-router";
 import {
   AgentFeedbackMode,
@@ -39,8 +40,15 @@ export function LabsSettingsPanel() {
     <SettingsPageContainer>
       <SettingsSection id="beta" title={gt("Beta")}>
         <BoringSidebarRow />
-        {/* Clerk is only mounted when this build has T3 Connect. */}
-        {hasCloudPublicConfig() ? <GuestLinksRowWithSignIn /> : <GuestLinksRow />}
+        {/* t3code-disconnected: guest links run over T3 Connect, which is disabled (DISCONNECTED.md). */}
+        {T3_CONNECT_ENABLED ? (
+          /* Clerk is only mounted when this build has T3 Connect. */
+          hasCloudPublicConfig() ? (
+            <GuestLinksRowWithSignIn />
+          ) : (
+            <GuestLinksRow />
+          )
+        ) : null}
         <LinkedEnvironmentsRow />
         <WorkflowsRow />
         <WorkflowSkippedRunsRow />

@@ -1,5 +1,6 @@
 import type { ManagedPolicySummary } from "@t3tools/contracts";
 import * as HostProcess from "@t3tools/shared/HostProcess";
+import { T3_CONNECT_ENABLED } from "@t3tools/shared/disconnected";
 import {
   nodeProcessRuntimeAttributes,
   processServiceInstanceId,
@@ -12,7 +13,8 @@ import * as Layer from "effect/Layer";
 import * as ManagedPolicy from "../policy/ManagedPolicy.ts";
 import { resolveRelayClientTracingConfig } from "./publicConfig.ts";
 
-const relayClientTracingConfig = resolveRelayClientTracingConfig();
+// t3code-disconnected: T3 Connect is disabled (DISCONNECTED.md), so relay traces are never exported.
+const relayClientTracingConfig = T3_CONNECT_ENABLED ? resolveRelayClientTracingConfig() : null;
 
 /**
  * `false` once the environment or a managed policy opted out. Until the desktop has read the

@@ -66,6 +66,9 @@ describe("web runtime relay telemetry policy", () => {
   ])("applies $surface before the first relay span", async (surface) => {
     const { desktopBridge, exports } = surface;
     vi.resetModules();
+    // t3code-disconnected: this covers upstream's relay tracing policy; the fork gate that keeps
+    // it off is covered in publicConfig.disconnected.test.ts.
+    vi.doMock("@t3tools/shared/disconnected", () => ({ T3_CONNECT_ENABLED: true }));
     vi.stubEnv("T3CODE_TELEMETRY_ENABLED", "false");
     vi.stubEnv("T3CODE_OTEL_SDK_DISABLED", "true");
     vi.stubEnv("OTEL_SDK_DISABLED", "true");
