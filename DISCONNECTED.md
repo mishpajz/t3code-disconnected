@@ -123,6 +123,25 @@ The list of outbound calls above comes from an audit of upstream at commit
 [`bb7783e`](https://github.com/pingdotgg/t3code/commit/bb7783e295506ad423f527ed28a019836e331e8c); the fork itself started from a slightly newer `main`.
 After each rebase, rerun the outbound check and review anything new.
 
+## CI and builds
+
+Upstream's workflows are **disabled in the repository settings**, not deleted, so rebases
+don't conflict on them. They need upstream's Blacksmith runners and secrets, and their deploy
+and publish jobs only run in `pingdotgg/t3code`. Workflows that upstream adds later start out
+enabled; check the Actions tab after a rebase and disable any new ones with
+`gh workflow disable <name>`.
+
+The fork's own workflows run on GitHub-hosted runners and are prefixed `disconnected-`:
+
+| Workflow | Runs on | What it does |
+|---|---|---|
+| `disconnected-ci.yml` | Pull requests and pushes to `main`, except docs-only changes | Lint, build and typecheck, and tests for the desktop scope |
+| `disconnected-windows-tests.yml` | Manual | Tests on Windows, for the whole repo or one package |
+| `disconnected-windows-installer.yml` | Manual | Builds the Windows x64 installer and attaches it to the run; nothing is published |
+
+The Windows installer is built without T3 Connect, Clerk or relay configuration, and without
+the WSL runtime. It is **unsigned**.
+
 ## License
 
 MIT, as upstream. See [LICENSE](./LICENSE).
