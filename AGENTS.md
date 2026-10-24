@@ -1,3 +1,16 @@
+> [!NOTE]
+> **This is `t3code-disconnected`, a fork of [T3 Code](https://github.com/pingdotgg/t3code)** that aims to
+> create a version that does not call home: no telemetry, no update checks, no T3 Connect, and no downloads
+> from third-party servers. [DISCONNECTED.md](./DISCONNECTED.md) lists the changes and takes precedence
+> over the upstream guidance below. In particular:
+>
+> - Do not add network calls to T3, npm, GitHub or other third-party hosts. Only talk to hosts the user
+>   configures (their remote environments, Git hosts, and the provider CLIs they run).
+> - Do not add or bring back T3 Connect, cloudflared, Clerk, Tailscale, or any other tunnel or VPN client.
+>   Where the sections below ask for T3 Connect or Tailscale support, skip that part.
+> - Keep fork changes small and gated in place, so rebasing on upstream stays cheap. When a change lands,
+>   tick its item in DISCONNECTED.md.
+
 # T3 Code
 
 T3 Code is a minimal GUI for coding agents. A Node WebSocket server wraps provider CLIs and agents (Codex, Claude Code, Cursor, Grok, OpenCode, Antigravity) and serves web, desktop, and mobile clients.
