@@ -1,0 +1,12 @@
+.git
+.repos
+**/node_modules
+**/dist
+**/dist-electron
+**/.turbo
+.t3
+release
+egress-check/out
+apps/mobile/ios
+apps/mobile/android
+apps/mobile/modules/t3-terminal/Vendor
