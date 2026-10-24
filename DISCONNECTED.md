@@ -5,6 +5,14 @@ not send data to outside services. The server, web UI, desktop app and orchestra
 as they are. Only the code that talks to servers other than the ones you point it at is
 removed or turned off.
 
+## Scope
+
+This fork cares about the **desktop app**: `apps/desktop`, the server it bundles
+(`apps/server`, also run on its own with `t3 serve` on worker machines), and `apps/web` as the
+desktop app's UI. The hosted web app (app.t3.codes), the mobile app (`apps/mobile`) and the
+marketing site (`apps/marketing`) are left as upstream has them. They are not tested or
+patched, beyond what is needed to keep the build working.
+
 ## Goals
 
 - **No calls home.** No analytics, update checks, version checks or downloads from T3,
@@ -24,7 +32,8 @@ removed or turned off.
   (for example Azure DevOps through `az`). They stay.
 - **The built-in browser.** It can still download Chrome on first use and browse wherever
   you or an agent navigate.
-- **Mobile app.** Out of scope; it depends on T3 Connect for push notifications.
+- **Hosted web app and mobile app.** See [Scope](#scope). The mobile app also depends on
+  T3 Connect for push notifications.
 
 ## Changes
 
