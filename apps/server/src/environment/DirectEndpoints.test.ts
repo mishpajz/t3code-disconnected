@@ -1,4 +1,5 @@
 import * as NodeServices from "@effect/platform-node/NodeServices";
+import { TAILSCALE_ENABLED } from "@t3tools/shared/disconnected";
 import { it as effectIt } from "@effect/vitest";
 import type * as NodeOS from "node:os";
 import * as Effect from "effect/Effect";
@@ -99,6 +100,10 @@ const virtualInterface = (address: string, mac = "02:42:ac:11:00:01") => [
     cidr: `${address}/16`,
   },
 ];
+
+// t3code-disconnected: Tailscale is disabled (DISCONNECTED.md). These cover upstream
+// behaviour that only runs with Tailscale enabled.
+const itTailscale = effectIt.effect.skipIf(!TAILSCALE_ENABLED);
 
 describe("resolveBoundEndpoints", () => {
   it("lists every external IPv4 address for a wildcard bind, tagging the tailnet one", () => {
@@ -285,7 +290,7 @@ const resolveWithServe = (probeStatus: number) =>
   );
 
 describe("DirectEndpoints Tailscale Serve", () => {
-  effectIt.effect("lists the tailnet name once Serve answers for this server", () =>
+  itTailscale("lists the tailnet name once Serve answers for this server", () =>
     Effect.gen(function* () {
       expect(yield* resolveWithServe(200)).toEqual([
         { kind: "tailnet", httpBaseUrl: "https://bb-1.tail1234.ts.net/" },
@@ -293,7 +298,7 @@ describe("DirectEndpoints Tailscale Serve", () => {
     }),
   );
 
-  effectIt.effect(
+  itTailscale(
     "returns bound endpoints during validation and reuses only a completed Serve result",
     () =>
       Effect.gen(function* () {
@@ -354,5 +359,29 @@ describe("DirectEndpoints Tailscale Serve", () => {
     Effect.gen(function* () {
       expect(yield* resolveWithServe(502)).toEqual([]);
     }),
+  );
+
+  // t3code-disconnected: Tailscale is disabled (DISCONNECTED.md).
+  effectIt.effect("never runs tailscale or probes the tailnet name when Serve is requested", () =>
+    Effect.flatMap(DirectEndpoints.DirectEndpoints, (service) => service.resolve()).pipe(
+      Effect.map((endpoints) => expect(endpoints).toEqual([])),
+      Effect.provide(
+        DirectEndpoints.layer.pipe(
+          Layer.provide(
+            Layer.mergeAll(
+              layerServeConfig(),
+              Layer.succeed(
+                ChildProcessSpawner.ChildProcessSpawner,
+                ChildProcessSpawner.make(() => Effect.die("unexpected tailscale process")),
+              ),
+              Layer.succeed(
+                HttpClient.HttpClient,
+                HttpClient.make(() => Effect.die("unexpected Tailscale HTTPS probe")),
+              ),
+            ),
+          ),
+        ),
+      ),
+    ),
   );
 });

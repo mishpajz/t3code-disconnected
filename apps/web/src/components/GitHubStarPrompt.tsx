@@ -1,5 +1,6 @@
 import { type EnvironmentId, SourceControlProviderKind } from "@t3tools/contracts";
 import { runAtomCommand } from "@t3tools/client-runtime/state/runtime";
+import { GITHUB_STAR_PROMPT_ENABLED } from "@t3tools/shared/disconnected";
 import * as Schema from "effect/Schema";
 import { StarIcon } from "lucide-react";
 
@@ -143,7 +144,8 @@ async function starRepository(environmentId: EnvironmentId) {
  * unless the environment's GitHub account already starred the repo. Waits until the user is idle.
  */
 export async function recordPromptSent(environmentId: EnvironmentId): Promise<void> {
-  if (shownThisSession) return;
+  // t3code-disconnected: no star check against api.github.com (DISCONNECTED.md).
+  if (!GITHUB_STAR_PROMPT_ENABLED || shownThisSession) return;
   try {
     if (getLocalStorageItem(DISMISSED_KEY, Schema.Boolean)) return;
     const sent = (getLocalStorageItem(SENT_KEY, Schema.Number) ?? 0) + 1;

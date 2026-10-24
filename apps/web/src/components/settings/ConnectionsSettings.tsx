@@ -1,5 +1,6 @@
 import { SessionPermissions } from "./SessionPermissions";
 import { useSearch } from "@tanstack/react-router";
+import { TAILSCALE_ENABLED } from "@t3tools/shared/disconnected";
 import { ChevronRightIcon, EllipsisIcon } from "lucide-react";
 import { useAtomValue } from "@effect/atom-react";
 import { type ReactNode, useState } from "react";
@@ -1226,7 +1227,8 @@ function ConnectionsSettingsContent({
               <>
                 {renderNetworkAccessRow()}
                 {renderEndpointRows()}
-                {renderTailscaleRow()}
+                {/* t3code-disconnected: Tailscale is disabled (DISCONNECTED.md). */}
+                {TAILSCALE_ENABLED ? renderTailscaleRow() : null}
                 {renderWslRow()}
               </>
             ) : canManageLocalBackend ? (

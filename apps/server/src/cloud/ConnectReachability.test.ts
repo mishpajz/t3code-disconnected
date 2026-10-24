@@ -23,6 +23,11 @@ import { classifyReachability, type ReachabilityFacts } from "./ConnectReachabil
 import * as ManagedEndpointRuntime from "./ManagedEndpointRuntime.ts";
 
 vi.mock("node:net", { spy: true });
+// t3code-disconnected: these tests cover upstream's T3 Connect behaviour, so they turn it on.
+vi.mock("@t3tools/shared/disconnected", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("@t3tools/shared/disconnected")>()),
+  T3_CONNECT_ENABLED: true,
+}));
 
 const checkedAt = "2026-10-19T00:00:00.000Z";
 const connected = { pid: 1, readyConnections: 4, hostname: "env.example.test", protocol: "quic" };

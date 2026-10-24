@@ -5,6 +5,7 @@ import {
   type EnvironmentConnectReachability,
   formatConnectReachable,
 } from "@t3tools/contracts";
+import { T3_CONNECT_ENABLED, TAILSCALE_ENABLED } from "@t3tools/shared/disconnected";
 import { readTailscaleExitNode, type TailscaleExitNode } from "@t3tools/tailscale";
 import * as Clock from "effect/Clock";
 import * as Context from "effect/Context";
@@ -237,10 +238,13 @@ const make = Effect.gen(function* () {
   });
   const spawner = yield* ChildProcessSpawner.ChildProcessSpawner;
   const scope = yield* Scope.Scope;
-  const readExitNode = readTailscaleExitNode.pipe(
-    Effect.provideService(ChildProcessSpawner.ChildProcessSpawner, spawner),
-    Effect.orElseSucceed(() => null),
-  );
+  // t3code-disconnected: Tailscale is disabled (DISCONNECTED.md).
+  const readExitNode = TAILSCALE_ENABLED
+    ? readTailscaleExitNode.pipe(
+        Effect.provideService(ChildProcessSpawner.ChildProcessSpawner, spawner),
+        Effect.orElseSucceed(() => null),
+      )
+    : Effect.succeed<TailscaleExitNode | null>(null);
 
   const probeEndpoint = Effect.fn("ConnectReachability.probeEndpoint")(
     function* (hostname: string) {
@@ -272,9 +276,13 @@ const make = Effect.gen(function* () {
   );
 
   const gatherFacts = Effect.gen(function* () {
-    const managedTunnelConfigured = Option.isSome(
-      yield* secrets.get(CLOUD_ENDPOINT_RUNTIME_CONFIG).pipe(Effect.orElseSucceed(Option.none)),
-    );
+    // t3code-disconnected: T3 Connect is disabled (DISCONNECTED.md); a stored tunnel config
+    // reads as not linked, so no probes run against Cloudflare.
+    const managedTunnelConfigured =
+      T3_CONNECT_ENABLED &&
+      Option.isSome(
+        yield* secrets.get(CLOUD_ENDPOINT_RUNTIME_CONFIG).pipe(Effect.orElseSucceed(Option.none)),
+      );
     const connector = managedTunnelConfigured ? yield* runtime.inspectConnector : null;
     const endpoint =
       connector?.hostname && connector.readyConnections !== 0

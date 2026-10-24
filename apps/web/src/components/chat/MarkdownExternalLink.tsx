@@ -11,8 +11,13 @@ const MARKDOWN_LINK_FAVICON_CLASS_NAME = "block size-full shrink-0 select-none";
 
 const failedFaviconHosts = new Set<string>();
 
+// Azure DevOps has no `publicHost`, so without this its links ask Google for a favicon.
+const AZURE_DEVOPS_HOST = /^(?:[^.]+\.)?(?:dev\.azure\.com|visualstudio\.com)\.?$/iu;
+
 function sourceControlHostIcon(host: string): ReactNode {
-  const definition = sourceControlClients.findByPublicDomain(host);
+  const definition =
+    sourceControlClients.findByPublicDomain(host) ??
+    (AZURE_DEVOPS_HOST.test(host) ? sourceControlClients.find("azure-devops") : undefined);
   if (definition === undefined) return null;
   const Icon = sourceControlIcon(definition);
   return <Icon className={MARKDOWN_LINK_FAVICON_CLASS_NAME} />;

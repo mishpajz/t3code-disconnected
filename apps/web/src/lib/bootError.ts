@@ -1,6 +1,8 @@
 import type { DesktopBridge, DesktopUpdateState } from "@t3tools/contracts";
+import { RUNTIME_DOWNLOADS_ENABLED } from "@t3tools/shared/disconnected";
 
-const FALLBACK_TRIAGE_COMMAND = "npx t3 triage";
+// t3code-disconnected: npx would fetch upstream's t3 from npm (DISCONNECTED.md).
+const FALLBACK_TRIAGE_COMMAND = RUNTIME_DOWNLOADS_ENABLED ? "npx t3 triage" : "t3 triage";
 const DOWNLOAD_URL = "https://t3.codes/download";
 const ISSUE_URL = "https://github.com/pingdotgg/t3code/issues/new";
 const LAST_FAILURE_KEY = "t3code:boot-failed-at";
@@ -354,7 +356,8 @@ export function showBootError(error: unknown) {
 
   const more = element("details", { open: isRepeatFailure(Date.now()) }, [
     element("summary", { textContent: "More options if it keeps failing" }),
-    ...(bridge
+    // t3code-disconnected: t3.codes only offers upstream's builds.
+    ...(bridge && RUNTIME_DOWNLOADS_ENABLED
       ? [
           link(
             nightly ? `${DOWNLOAD_URL}?channel=nightly` : DOWNLOAD_URL,
