@@ -107,9 +107,10 @@ enabled behaviour are skipped or force the gate on.
 
 ### Other changes
 
-- [ ] **Copilot launched through a wrapper.** Copilot-specific handling (nested subagents)
+- [x] **Copilot launched through a wrapper.** Copilot-specific handling (nested subagents)
       also applies when Copilot is started through a wrapper executable, not only one named
-      `copilot` (`packages/provider-acp-registry/src/server/adapter.ts`).
+      `copilot`: a local command counts as Copilot when its executable or any argument
+      contains `copilot` (`packages/provider-acp-registry/src/server/copilotAcp.ts`).
 - [x] **Egress check.** Runs the server and web UI with no route to the internet and
       records every DNS lookup and connection attempt ([`egress-check/`](./egress-check/README.md)).
       Runs before every Windows installer build.
