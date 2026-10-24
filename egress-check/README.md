@@ -45,3 +45,22 @@ Results land in `egress-check/out/`: the report, `dns.jsonl`, `packets.txt`,
 - **Coverage depends on what gets exercised.** Features that only make calls
   when used (adding an ACP registry agent, browsing themes, opening a pull
   request) need steps in `drive.mjs` to be checked.
+
+## Source check
+
+The egress check only sees calls that the steps it runs trigger. `source-check.mjs`
+covers the rest by reading the source: it lists every URL host and every tunnel or
+VPN tool name (cloudflared, Tailscale, ngrok and others) in the files that ship
+in the desktop app, leaving out tests, build scripts, loopback and reserved
+example hosts.
+
+```bash
+node egress-check/source-check.mjs            # fails on anything not in the baseline
+node egress-check/source-check.mjs --update   # accept the current list
+```
+
+`source-baseline.txt` holds one term and file per line. A new line means a host or
+tool name showed up in a file that did not have it before, usually after a rebase.
+Check that it is gated, only a link the user opens, or a host the user configures,
+then run `--update` and commit the baseline with the change. Disconnected CI runs
+the check on every push.

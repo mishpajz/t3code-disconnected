@@ -114,8 +114,10 @@ enabled behaviour are skipped or force the gate on.
 - [x] **Egress check.** Runs the server and web UI with no route to the internet and
       records every DNS lookup and connection attempt ([`egress-check/`](./egress-check/README.md)).
       Runs before every Windows installer build.
-- [ ] **Source check script.** Lists outbound URLs and tunnel or VPN tool names in the
-      source, to catch calls the egress check doesn't exercise.
+- [x] **Source check script.** Lists outbound URLs and tunnel or VPN tool names in the
+      source, to catch calls the egress check doesn't exercise, and fails on any not in its
+      reviewed baseline ([`egress-check/source-check.mjs`](./egress-check/README.md#source-check)).
+      Runs in Disconnected CI.
 
 ## Remote access over Dev Tunnels
 
@@ -156,7 +158,8 @@ git rebase upstream/main
 
 The list of outbound calls above comes from an audit of upstream at commit
 [`bb7783e`](https://github.com/pingdotgg/t3code/commit/bb7783e295506ad423f527ed28a019836e331e8c); the fork itself started from a slightly newer `main`.
-After each rebase, run `egress-check/check.sh` and review anything new.
+After each rebase, run `egress-check/check.sh` and `node egress-check/source-check.mjs`
+and review anything new.
 
 ## CI and builds
 
@@ -170,7 +173,7 @@ The fork's own workflows run on GitHub-hosted runners and are prefixed `disconne
 
 | Workflow                             | Runs on                                                      | What it does                                                                                                  |
 | ------------------------------------ | ------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------- |
-| `disconnected-ci.yml`                | Pull requests and pushes to `main`, except docs-only changes | Lint, build and typecheck, and tests for the desktop scope                                                    |
+| `disconnected-ci.yml`                | Pull requests and pushes to `main`, except docs-only changes | Lint, source check, build and typecheck, and tests for the desktop scope                                      |
 | `disconnected-windows-tests.yml`     | Manual                                                       | Tests on Windows, for the whole repo or one package                                                           |
 | `disconnected-windows-installer.yml` | Manual                                                       | Runs the egress check, then builds the Windows x64 installer and attaches it to the run; nothing is published |
 
