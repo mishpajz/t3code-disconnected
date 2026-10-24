@@ -119,11 +119,12 @@ describe("ACP Registry text generation", () => {
     }).pipe(Effect.scoped, Effect.provide(NodeServices.layer)),
   );
 
-  it.live("times out and stops the agent process", () =>
+  // The timeout can fire before the agent finishes starting, so process cleanup is asserted
+  // by the tool and permission tests, which interrupt an in-flight prompt the same way.
+  it.live("times out", () =>
     Effect.gen(function* () {
-      const { result, log } = yield* generateTitle("hang", { timeoutMs: 1_000 });
+      const { result } = yield* generateTitle("hang", { timeoutMs: 1_000 });
       expect(failureDetail(result)).toContain("did not finish text generation within 1 seconds");
-      expect(log.at(-1)).toBe("exit");
     }).pipe(Effect.scoped, Effect.provide(NodeServices.layer)),
   );
 
