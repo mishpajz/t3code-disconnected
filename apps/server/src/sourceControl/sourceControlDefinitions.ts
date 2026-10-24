@@ -1,5 +1,6 @@
 import * as AzureDevOpsDriver from "@t3tools/source-control-azure-devops/server/driver";
 import * as BitbucketDriver from "@t3tools/source-control-bitbucket/server/driver";
+import { BITBUCKET_ENABLED } from "@t3tools/shared/disconnected";
 import { builtInSourceControlDefinitions } from "@t3tools/source-control-definitions/registry";
 import * as ForgejoDriver from "@t3tools/source-control-forgejo/server/driver";
 import * as GitCafeDriver from "@t3tools/source-control-gitcafe/server/driver";
@@ -12,7 +13,9 @@ export const BUILT_IN_SOURCE_CONTROL_DRIVER_LIST = [
   GitLabDriver.driver,
   GitCafeDriver.driver,
   ForgejoDriver.driver,
-  BitbucketDriver.driver,
+  // t3code-disconnected: Bitbucket is disabled (DISCONNECTED.md). Without its driver the host is
+  // not listed or probed, and Bitbucket remotes read as an unsupported provider.
+  ...(BITBUCKET_ENABLED ? [BitbucketDriver.driver] : []),
   AzureDevOpsDriver.driver,
 ] as const;
 

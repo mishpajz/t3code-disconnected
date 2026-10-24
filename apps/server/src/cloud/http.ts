@@ -9,6 +9,7 @@ import {
   EnvironmentHttpInternalServerError,
   EnvironmentHttpUnauthorizedError,
 } from "@t3tools/contracts";
+import { T3_CONNECT_ENABLED } from "@t3tools/shared/disconnected";
 import * as Effect from "effect/Effect";
 import * as HttpEffect from "effect/http/HttpEffect";
 import { HttpServerRequest, HttpServerResponse } from "effect/http";
@@ -103,7 +104,8 @@ const toHttpErrorOrUnavailable = <A, R>(
     ),
   );
 
-export const layer = HttpApiBuilder.group(
+/** @public Upstream's handlers, kept for tests while `layer` is gated off. */
+export const layerEnabled = HttpApiBuilder.group(
   EnvironmentHttpApi,
   "connect",
   Effect.fnUntraced(function* (handlers) {
@@ -156,3 +158,43 @@ export const layer = HttpApiBuilder.group(
       );
   }),
 );
+
+// t3code-disconnected: T3 Connect is disabled (DISCONNECTED.md). Clients see an unlinked
+// environment, linking and relay-signed requests are refused, and unlink (local only)
+// still clears secrets left by an earlier upstream link.
+const connectDisabled = Effect.fail(
+  new EnvironmentHttpBadRequestError({ message: "T3 Connect is disabled in this build." }),
+);
+
+const layerDisabled = HttpApiBuilder.group(
+  EnvironmentHttpApi,
+  "connect",
+  Effect.fnUntraced(function* (handlers) {
+    const cloudLink = yield* CloudLink.CloudLink;
+    return handlers
+      .handle("linkProof", () => connectDisabled)
+      .handle("relayConfig", () => connectDisabled)
+      .handle("linkState", () =>
+        requireEnvironmentScope(AuthRelayReadScope).pipe(
+          Effect.as({
+            linked: false,
+            cloudUserId: null,
+            relayUrl: null,
+            relayIssuer: null,
+            publishAgentActivity: false,
+          }),
+        ),
+      )
+      .handle("checkReachability", () => connectDisabled)
+      .handle("unlink", () =>
+        requireEnvironmentScope(AuthRelayWriteScope).pipe(
+          Effect.andThen(toHttpError(cloudLink.unlink())),
+        ),
+      )
+      .handle("preferences", () => connectDisabled)
+      .handle("health", () => connectDisabled)
+      .handle("t3MintCredential", () => connectDisabled);
+  }),
+);
+
+export const layer = T3_CONNECT_ENABLED ? layerEnabled : layerDisabled;

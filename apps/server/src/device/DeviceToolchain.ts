@@ -1,4 +1,5 @@
 import type { DeviceToolVersions } from "@t3tools/contracts";
+import { RUNTIME_DOWNLOADS_ENABLED } from "@t3tools/shared/disconnected";
 // npm exposes entry files before extraction completes; their presence does not prove a usable tree.
 import * as Duration from "effect/Duration";
 import * as Effect from "effect/Effect";
@@ -38,9 +39,13 @@ export class DeviceToolchainInstallError extends Schema.TaggedError<DeviceToolch
     step: Schema.String,
     exitCode: Schema.optional(Schema.Number),
     cause: Schema.optional(Schema.Defect()),
+    manualInstall: Schema.optional(Schema.String),
   },
 ) {
   override get message(): string {
+    if (this.manualInstall !== undefined) {
+      return `This build does not download ${this.tool} from npm. Install it yourself: ${this.manualInstall}`;
+    }
     const suffix = this.exitCode === undefined ? "" : ` (exit code ${this.exitCode})`;
     return `Installing ${this.tool} failed while ${this.step}${suffix}.`;
   }
@@ -104,6 +109,14 @@ const installTool = Effect.fn("DeviceToolchain.installTool")(function* (
     new DeviceToolchainInstallError({ tool: spec.name, step, cause });
 
   if (yield* isInstalled(fs, paths, spec.version)) return paths;
+  // t3code-disconnected: no npm downloads the user did not start (DISCONNECTED.md).
+  if (!RUNTIME_DOWNLOADS_ENABLED) {
+    return yield* new DeviceToolchainInstallError({
+      tool: spec.name,
+      step: "downloading from npm",
+      manualInstall: `npm install --prefix "${paths.installDir}" ${spec.name}@${spec.version}, then write ${spec.version} to "${paths.sentinelPath}".`,
+    });
+  }
 
   const parentDir = path.dirname(paths.installDir);
   yield* fs

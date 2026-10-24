@@ -7,6 +7,7 @@ import {
   type SourceControlSignInResult,
   type SourceControlStarredInput,
 } from "@t3tools/contracts";
+import { GITHUB_STAR_PROMPT_ENABLED } from "@t3tools/shared/disconnected";
 import * as Context from "effect/Context";
 import * as Effect from "effect/Effect";
 import * as Layer from "effect/Layer";
@@ -66,6 +67,8 @@ const make = Effect.gen(function* () {
       } satisfies SourceControlAppAccess;
     }),
     starred: Effect.fn("SourceControlSignIn.starred")(function* (input) {
+      // t3code-disconnected: the only caller is upstream's star prompt (DISCONNECTED.md).
+      if (!GITHUB_STAR_PROMPT_ENABLED) return false;
       const isStarred = drivers.find(({ driver }) => driver.kind === input.provider)?.instance
         .isRepositoryStarred;
       return isStarred === undefined ? false : yield* isStarred(input.host, input.repository);

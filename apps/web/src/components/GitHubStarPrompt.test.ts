@@ -10,6 +10,11 @@ const { add, starred } = vi.hoisted(() => ({
 vi.mock("./ui/toast", () => ({ toastManager: { add, close: vi.fn() } }));
 vi.mock("../rpc/atomRegistry", () => ({ appAtomRegistry: {} }));
 vi.mock("../state/sourceControl", () => ({ sourceControlEnvironment: { checkStarred: {} } }));
+// t3code-disconnected: these tests cover upstream's prompt, so they turn it on.
+vi.mock("@t3tools/shared/disconnected", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("@t3tools/shared/disconnected")>()),
+  GITHUB_STAR_PROMPT_ENABLED: true,
+}));
 vi.mock("@t3tools/client-runtime/state/runtime", () => ({
   runAtomCommand: async () => {
     starred.duringCheck();

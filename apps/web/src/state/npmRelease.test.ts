@@ -166,3 +166,9 @@ it("only displays the safe release error, not arbitrary transport diagnostics", 
     npmReleaseFailureMessage(Cause.fail(new Error("sensitive transport details"))),
   ).not.toContain("sensitive");
 });
+
+// t3code-disconnected: preserve upstream enabled behavior; disabled behavior has focused coverage.
+vi.mock("@t3tools/shared/disconnected", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("@t3tools/shared/disconnected")>()),
+  NPM_RELEASE_CHECK_ENABLED: true,
+}));

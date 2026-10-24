@@ -260,7 +260,10 @@ const layerService = (input: {
 }) =>
   ServerConfig.layerTest(process.cwd(), { prefix: input.prefix }).pipe(
     Layer.provideMerge(NodeServices.layer),
-    Layer.provideMerge(ServerSettings.layerTest(input.settings ?? {})),
+    // t3code-disconnected: checks are off by default; these tests cover upstream's fetching.
+    Layer.provideMerge(
+      ServerSettings.layerTest(input.settings ?? { enableProviderUpdateChecks: true }),
+    ),
     Layer.provideMerge(layerHttpClient(input.response)),
   );
 
@@ -392,6 +395,31 @@ describe("ModelManifest service", () => {
           prefix: "model-manifest-optout-test",
           response: () => Response.json(REMOTE_MANIFEST),
           settings: { enableProviderUpdateChecks: false },
+        }),
+      ),
+    ),
+  );
+
+  it.live("t3code-disconnected: does not fetch with default settings", () =>
+    Effect.gen(function* () {
+      let fetchCount = 0;
+      const service = yield* ModelManifest.make.pipe(
+        Effect.provide(
+          layerHttpClient(() => {
+            fetchCount += 1;
+            return Response.json(REMOTE_MANIFEST);
+          }),
+        ),
+      );
+      assert.deepStrictEqual(yield* service.refresh, ModelManifest.BUNDLED_MODEL_MANIFEST);
+      assert.strictEqual(fetchCount, 0);
+    }).pipe(
+      Effect.scoped,
+      Effect.provide(
+        layerService({
+          prefix: "model-manifest-default-off-test",
+          response: () => Response.json(REMOTE_MANIFEST),
+          settings: {},
         }),
       ),
     ),

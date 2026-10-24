@@ -1,5 +1,6 @@
 import { useAuth } from "@clerk/react";
 import { useAtomValue } from "@effect/atom-react";
+import { TAILSCALE_ENABLED } from "@t3tools/shared/disconnected";
 import type {
   AgentSessionProjectCandidate,
   EnvironmentId,
@@ -642,9 +643,13 @@ function PairingForm({
               <code className="font-mono">npx t3 serve</code>, then run:
             </p>
             <CommandBlock command="npx t3 pair" className="mt-2" />
-            <p className="mt-2 text-xs leading-relaxed text-muted-foreground">
-              On a tailnet, run <code className="font-mono">npx t3 pair --tailscale</code> instead.
-            </p>
+            {/* t3code-disconnected: Tailscale is disabled (DISCONNECTED.md). */}
+            {TAILSCALE_ENABLED ? (
+              <p className="mt-2 text-xs leading-relaxed text-muted-foreground">
+                On a tailnet, run <code className="font-mono">npx t3 pair --tailscale</code>{" "}
+                instead.
+              </p>
+            ) : null}
           </CollapsiblePanel>
         </Collapsible>
       </form>

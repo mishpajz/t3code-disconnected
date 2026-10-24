@@ -11,6 +11,7 @@ import {
   PROMPT_LINK_MAX_PROMPT_LENGTH,
   type PromptLinkRepository,
 } from "@t3tools/shared/promptLinks";
+import { PROMPT_LINKS_ENABLED } from "@t3tools/shared/disconnected";
 
 import { type ComposerThreadTarget, useComposerDraftStore } from "~/composerDraftStore";
 import { writeTextToClipboard } from "~/hooks/useCopyToClipboard";
@@ -27,6 +28,7 @@ export function promptLinkFor(
     readonly model: string | null;
   },
 ): string | null {
+  if (!PROMPT_LINKS_ENABLED) return null;
   const trimmed = isAttachmentOnlyBootstrapPrompt(prompt) ? "" : prompt.trim();
   if (trimmed.length === 0 || trimmed.length > PROMPT_LINK_MAX_PROMPT_LENGTH) return null;
   return buildNewThreadLink({ prompt: trimmed, ...context, origin: configuredHostedAppUrl() });

@@ -1,3 +1,4 @@
+import { RUNTIME_DOWNLOADS_ENABLED } from "@t3tools/shared/disconnected";
 import * as HostProcess from "@t3tools/shared/HostProcess";
 import {
   CLI_RELEASE_BASE_URL_ENV,
@@ -58,6 +59,11 @@ const RELEASE_INDEX_MAX_PAGES = 10;
 export const resolveNewestVersion = Effect.fn("cli.update.resolve_newest")(function* (
   channel: CliReleaseChannel,
 ) {
+  // t3code-disconnected: release discovery must not contact GitHub.
+  if (!RUNTIME_DOWNLOADS_ENABLED)
+    return yield* new CliUpdateError({
+      reason: "t3 update is disabled in this build. Install updates manually.",
+    });
   const httpClient = yield* HttpClient.HttpClient;
   const environment = yield* HostProcess.Environment;
   const githubToken = environment.GH_TOKEN?.trim() || environment.GITHUB_TOKEN?.trim() || undefined;
@@ -222,6 +228,11 @@ export const updateCommand = Command.make("update", {
   ),
   Command.withHandler((flags) =>
     Effect.gen(function* () {
+      // t3code-disconnected: reject explicit versions too, before resolving config or services.
+      if (!RUNTIME_DOWNLOADS_ENABLED)
+        return yield* new CliUpdateError({
+          reason: "t3 update is disabled in this build. Install updates manually.",
+        });
       const logLevel = yield* GlobalFlag.LogLevel;
       const config = yield* resolveCliAuthConfig(flags, logLevel);
       return yield* runUpdate({

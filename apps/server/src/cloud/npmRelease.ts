@@ -4,6 +4,7 @@ import {
   type ServerNpmRelease,
 } from "@t3tools/contracts";
 import { npmReleaseDatabaseMigration } from "@t3tools/shared/cliRelease";
+import { NPM_RELEASE_CHECK_ENABLED } from "@t3tools/shared/disconnected";
 import { resolveCommandPath } from "@t3tools/shared/shell";
 import * as Cache from "effect/Cache";
 import * as Context from "effect/Context";
@@ -122,6 +123,8 @@ export const make = Effect.fn("NpmRelease.make")(function* () {
           () => new ServerNpmReleaseError({ reason: "Invalid release version or track." }),
         ),
       );
+      // t3code-disconnected: never ask npm or the public registry (DISCONNECTED.md).
+      if (!NPM_RELEASE_CHECK_ENABLED) return null;
       return yield* Cache.get(cache, spec);
     }),
   });
