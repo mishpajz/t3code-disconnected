@@ -133,11 +133,11 @@ enabled; check the Actions tab after a rebase and disable any new ones with
 
 The fork's own workflows run on GitHub-hosted runners and are prefixed `disconnected-`:
 
-| Workflow | Runs on | What it does |
-|---|---|---|
-| `disconnected-ci.yml` | Pull requests and pushes to `main`, except docs-only changes | Lint, build and typecheck, and tests for the desktop scope |
-| `disconnected-windows-tests.yml` | Manual | Tests on Windows, for the whole repo or one package |
-| `disconnected-windows-installer.yml` | Manual | Builds the Windows x64 installer and attaches it to the run; nothing is published |
+| Workflow                             | Runs on                                                      | What it does                                                                      |
+| ------------------------------------ | ------------------------------------------------------------ | --------------------------------------------------------------------------------- |
+| `disconnected-ci.yml`                | Pull requests and pushes to `main`, except docs-only changes | Lint, build and typecheck, and tests for the desktop scope                        |
+| `disconnected-windows-tests.yml`     | Manual                                                       | Tests on Windows, for the whole repo or one package                               |
+| `disconnected-windows-installer.yml` | Manual                                                       | Builds the Windows x64 installer and attaches it to the run; nothing is published |
 
 The Windows installer is built without T3 Connect, Clerk or relay configuration, and without
 the WSL runtime. It is **unsigned**.
