@@ -39,5 +39,8 @@ export const ACP_REGISTRY_ENABLED = !DISCONNECTED;
 /** Third-party favicon service and remote images for links in chat. */
 export const REMOTE_FAVICONS_ENABLED = !DISCONNECTED;
 
+/** Bitbucket Cloud integration; it checks sign-in against api.bitbucket.org even with no token. */
+export const BITBUCKET_ENABLED = !DISCONNECTED;
+
 /** Theme marketplace backed by open-vsx.org. */
 export const THEME_MARKETPLACE_ENABLED = !DISCONNECTED;
