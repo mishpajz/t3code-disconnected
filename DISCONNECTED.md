@@ -116,6 +116,14 @@ enabled behaviour are skipped or force the gate on.
       also applies when Copilot is started through a wrapper executable, not only one named
       `copilot`: a local command counts as Copilot when its executable or any argument
       contains `copilot` (`packages/provider-acp-registry/src/server/copilotAcp.ts`).
+- [x] **Text generation with ACP agents.** ACP Registry instances, such as a local
+      `agency copilot --acp --stdio` command, can be picked as the text generation model for
+      thread titles, commit messages, pull request content and branch names. Every generation
+      is a request to the agent, so pick a cheap model, and it starts a fresh agent process in
+      the project directory. The agent gets no file or terminal access; it is stopped if it
+      starts tool work, and permission requests are rejected. Review guides need read-only
+      investigation, which a generic ACP agent cannot guarantee, so they still need another
+      provider (`packages/provider-acp-registry/src/server/textGeneration.ts`).
 - [x] **Egress check.** Runs the server and web UI with no route to the internet and
       records every DNS lookup and connection attempt ([`egress-check/`](./egress-check/README.md)).
       Runs before every Windows installer build.
