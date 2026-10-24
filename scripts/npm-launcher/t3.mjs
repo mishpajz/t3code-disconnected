@@ -5,6 +5,7 @@
 // then runs it. `dist/bin.mjs` re-enters here for background services
 // installed before 0.0.41, which start the npm package with Node and talk to
 // it over an IPC channel.
+import { RUNTIME_DOWNLOADS_ENABLED } from "./disconnected.mjs";
 import { spawn, spawnSync } from "node:child_process";
 import crypto from "node:crypto";
 import fs from "node:fs";
@@ -139,7 +140,13 @@ async function main() {
     );
   }
   const dir = path.join(t3Home(), "runtime", "versions", version);
-  if (!isComplete(dir)) await install(dir, key);
+  if (!isComplete(dir)) {
+    // t3code-disconnected: only an already installed runtime can be launched.
+    if (!RUNTIME_DOWNLOADS_ENABLED) {
+      throw new Error("Runtime downloads are disabled in this build. Install t3 manually.");
+    }
+    await install(dir, key);
+  }
 
   // A service launcher talks to its server over IPC; pass that channel and
   // signals through. In a terminal, Ctrl-C already reaches the child directly,

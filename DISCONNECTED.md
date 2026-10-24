@@ -30,7 +30,8 @@ master `DISCONNECTED` constant, in contracts so settings defaults can follow it
 (`PROVIDER_UPDATE_CHECKS_DEFAULT`).
 [`packages/shared/src/disconnected.ts`](./packages/shared/src/disconnected.ts) holds the
 per-feature gates derived from it (`T3_CONNECT_ENABLED`, `TAILSCALE_ENABLED`,
-`ANALYTICS_ENABLED`, `DESKTOP_AUTO_UPDATE_ENABLED`). Each gate is ANDed into upstream's own
+`ANALYTICS_ENABLED`, `DESKTOP_AUTO_UPDATE_ENABLED` and those listed under
+[Patched to stay local](#patched-to-stay-local)). Each gate is ANDed into upstream's own
 switch for the feature, so no build value, environment variable, setting or stored secret can
 turn it back on. Defaults only change what a fresh install starts with; users can still opt
 in. Fork patches are marked with a `t3code-disconnected:` comment; tests that cover upstream's
@@ -82,15 +83,27 @@ enabled behaviour are skipped or force the gate on.
 
 ### Patched to stay local
 
-- [ ] **npm version check** from the web UI every five minutes (`apps/web/src/state/npmRelease.ts`).
-- [ ] **CLI self-update and runtime downloads** (`t3 update`, npm launcher, SSH bootstrap).
-- [ ] **LiteLLM pricing** fetched from GitHub: use bundled rates
-      (`apps/server/src/usage/UsageService.ts`).
-- [ ] **ACP registry**: local ACP commands only, no registry index, package downloads or CDN
-      icons (`packages/provider-acp-registry`, `apps/web/src/components/settings/AcpRegistryIcon.tsx`).
-- [ ] **Favicons and external images** in chat and links: no Google favicon service
-      (`packages/shared/src/favicon.ts`).
-- [ ] **Theme marketplace** (open-vsx.org): hidden (`apps/web/src/openVsxThemes.ts`).
+- [x] **npm version check** from the web UI every five minutes: never runs, so no npm-driven
+      update prompt appears (`NPM_RELEASE_CHECK_ENABLED`, `apps/web/src/state/npmRelease.ts`).
+- [x] **CLI self-update and runtime downloads** (`RUNTIME_DOWNLOADS_ENABLED`): `t3 update` and
+      server self-update report that they are disabled; the npm launcher and background service
+      only start a runtime that is already installed; SSH environments run the `t3` already on
+      the remote host's `PATH` and fail with install instructions if there is none
+      (`apps/server/src/cli/update.ts`, `apps/server/src/cloud`, `scripts/npm-launcher`,
+      `packages/ssh/src/tunnel.ts`).
+- [x] **LiteLLM pricing** fetched from GitHub: usage costs use a bundled snapshot of the rates
+      instead, even on refresh (`REMOTE_PRICING_ENABLED`,
+      `apps/server/src/usage/usageBundledRates.ts`). Price overrides and provider-reported
+      costs still apply.
+- [x] **ACP registry**: local ACP commands only, no registry index, package downloads or CDN
+      icons (`ACP_REGISTRY_ENABLED`, `packages/provider-acp-registry`,
+      `apps/web/src/components/settings/AcpRegistryIcon.tsx`).
+- [x] **Favicons and external images** in chat and links: no Google favicon service, site or
+      provider-supplied icons, and remote images or videos in chat and pull request
+      descriptions are shown as links instead of loaded (`REMOTE_FAVICONS_ENABLED`,
+      `packages/shared/src/favicon.ts`, `apps/web/src/components/chat/remoteMedia.ts`).
+- [x] **Theme marketplace** (open-vsx.org): hidden; importing theme files still works
+      (`THEME_MARKETPLACE_ENABLED`, `apps/web/src/openVsxThemes.ts`).
 
 ### Other changes
 

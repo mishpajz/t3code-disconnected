@@ -1,4 +1,5 @@
 import { sha256 } from "@noble/hashes/sha2";
+import { THEME_MARKETPLACE_ENABLED } from "@t3tools/shared/disconnected";
 import JSZip from "jszip";
 import { parse, type ParseError } from "jsonc-parser";
 
@@ -241,6 +242,8 @@ export async function searchOpenVsxThemes(
   query: string,
   { signal, sortBy = "downloadCount" }: OpenVsxThemeSearchOptions = {},
 ): Promise<OpenVsxThemeExtension[]> {
+  // t3code-disconnected: marketplace browsing must never contact Open VSX (DISCONNECTED.md).
+  if (!THEME_MARKETPLACE_ENABLED) return [];
   const searchText = query.trim();
   if (!searchText) return [];
   const url = new URL(OPEN_VSX_SEARCH_URL);
@@ -627,6 +630,8 @@ export async function importOpenVsxThemeExtension(
   extension: OpenVsxThemeExtension,
   signal?: AbortSignal,
 ): Promise<ReadonlyArray<ThemeDefinition>> {
+  // t3code-disconnected: guard downloads even when called without the marketplace UI.
+  if (!THEME_MARKETPLACE_ENABLED) throw new Error("Theme marketplace is disabled in this build.");
   const manifestResponse = await fetch(extension.manifestUrl, signal ? { signal } : {});
   if (!manifestResponse.ok) throw new Error("That Open VSX extension has no readable manifest.");
   const manifestBytes = await readCappedResponse(

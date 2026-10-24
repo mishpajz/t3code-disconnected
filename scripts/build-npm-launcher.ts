@@ -22,6 +22,7 @@ import * as Schema from "effect/Schema";
 import { Command, Flag } from "effect/cli";
 import { ChildProcess, ChildProcessSpawner } from "effect/process";
 
+import { RUNTIME_DOWNLOADS_ENABLED } from "@t3tools/shared/disconnected";
 import * as HostProcess from "@t3tools/shared/HostProcess";
 import { fromJsonStringPretty } from "@t3tools/shared/schemaJson";
 import serverPackageJson from "../apps/server/package.json" with { type: "json" };
@@ -78,6 +79,11 @@ export const buildNpmLauncher = Effect.fn("buildNpmLauncher")(function* (input: 
     `${yield* encodePackageJson(npmLauncherPackageManifest(input.version))}\n`,
   );
   yield* fs.copyFile(path.join(sourceDir, "t3.mjs"), path.join(stageDir, "bin/t3.mjs"));
+  // t3code-disconnected: the dependency-free npm package carries the build-time gate.
+  yield* fs.writeFileString(
+    path.join(stageDir, "bin/disconnected.mjs"),
+    `export const RUNTIME_DOWNLOADS_ENABLED = ${RUNTIME_DOWNLOADS_ENABLED};\n`,
+  );
   yield* fs.chmod(path.join(stageDir, "bin/t3.mjs"), 0o755);
   yield* fs.copyFile(path.join(sourceDir, "bin.mjs"), path.join(stageDir, "dist/bin.mjs"));
   const readme = yield* path.fromFileUrl(new URL("../apps/server/README.md", import.meta.url));

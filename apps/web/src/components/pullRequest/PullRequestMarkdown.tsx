@@ -18,6 +18,7 @@ import { cn } from "~/lib/utils";
 import { PULL_REQUESTS_PANEL_REF } from "~/rightPanelStore";
 
 import ChatMarkdown from "../ChatMarkdown";
+import { canAutoLoadChatMedia } from "../chat/remoteMedia";
 import { MediaVideoPlayer } from "../media/MediaVideoPlayer";
 import { remarkPullRequestAutolinks, splitPullRequestBody } from "./pullRequestMarkdown.logic";
 
@@ -98,7 +99,9 @@ export function PullRequestMarkdown({
           );
         }
         const hostMedia = sourceControlClients.mediaUrl(segment.url);
-        if (segment.media === "video" && hostMedia !== null) {
+        // t3code-disconnected: remote attachments stay links, including host-proxied videos.
+        const autoLoadMedia = canAutoLoadChatMedia(segment.url);
+        if (autoLoadMedia && segment.media === "video" && hostMedia !== null) {
           return (
             <PullRequestHostVideo
               key={`${segment.id}:${segment.url}`}
@@ -109,7 +112,7 @@ export function PullRequestMarkdown({
             />
           );
         }
-        if (segment.media === "video") {
+        if (autoLoadMedia && segment.media === "video") {
           return (
             <MediaVideoPlayer
               key={`${segment.id}:${segment.url}`}

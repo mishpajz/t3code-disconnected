@@ -23,3 +23,21 @@ export const ANALYTICS_ENABLED = !DISCONNECTED;
 
 /** Desktop auto-update checks and downloads from the release feed. */
 export const DESKTOP_AUTO_UPDATE_ENABLED = !DISCONNECTED;
+
+/** Web UI polling the npm registry for a newer `t3` release. */
+export const NPM_RELEASE_CHECK_ENABLED = !DISCONNECTED;
+
+/** CLI self-update and runtime downloads from npm/GitHub (`t3 update`, npm launcher, SSH bootstrap). */
+export const RUNTIME_DOWNLOADS_ENABLED = !DISCONNECTED;
+
+/** Fetching LiteLLM model pricing from GitHub; bundled rates are used instead. */
+export const REMOTE_PRICING_ENABLED = !DISCONNECTED;
+
+/** ACP registry index, package downloads and CDN icons; local ACP commands still work. */
+export const ACP_REGISTRY_ENABLED = !DISCONNECTED;
+
+/** Third-party favicon service and remote images for links in chat. */
+export const REMOTE_FAVICONS_ENABLED = !DISCONNECTED;
+
+/** Theme marketplace backed by open-vsx.org. */
+export const THEME_MARKETPLACE_ENABLED = !DISCONNECTED;

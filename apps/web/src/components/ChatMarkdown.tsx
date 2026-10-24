@@ -63,6 +63,7 @@ import {
   markdownImageSourceFragment,
 } from "@t3tools/client-runtime/markdown-images";
 import { mediaUrlReference } from "@t3tools/client-runtime/media-reference";
+import { canAutoLoadChatMedia } from "./chat/remoteMedia";
 import { mediaKindFromPath, mediaMimeTypeFromExtension } from "@t3tools/shared/filePreview";
 import * as Cause from "effect/Cause";
 import * as Option from "effect/Option";
@@ -1387,6 +1388,16 @@ const CHAT_MARKDOWN_COMPONENTS = {
     const imageSource = classifyMarkdownImageSource(classifiedSrc, imageBaseDir ?? cwd);
     const kind = mediaKindFromPath(classifiedSrc) ?? "image";
     const directUri = imageSource._tag === "Direct" ? imageSource.uri : null;
+    // t3code-disconnected: gate before both direct loading and source-control media proxying.
+    if (directUri !== null && !canAutoLoadChatMedia(directUri)) {
+      return (
+        <ChatMarkdownImageFallback
+          alt={altText || srcString}
+          copyMarkdown={copyMarkdown}
+          kind={kind}
+        />
+      );
+    }
     const hostMediaUrl =
       directUri === null
         ? null

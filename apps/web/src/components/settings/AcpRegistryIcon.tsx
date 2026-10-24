@@ -1,4 +1,5 @@
 import { useEffect, useId, useState } from "react";
+import { ACP_REGISTRY_ENABLED } from "@t3tools/shared/disconnected";
 import {
   resolveOfficialAcpRegistryIconUrl,
   officialAcpRegistryIconUrlForAgentId,
@@ -27,6 +28,8 @@ async function checkedIconBlob(response: Response): Promise<Blob> {
 }
 
 export function loadCachedAcpRegistryIcon(iconUrl: string): Promise<Blob> {
+  // t3code-disconnected: no CDN requests, including cache misses (DISCONNECTED.md).
+  if (!ACP_REGISTRY_ENABLED) return Promise.reject(new Error("ACP Registry icons are disabled."));
   if (resolveOfficialAcpRegistryIconUrl(iconUrl) !== iconUrl) {
     return Promise.reject(new Error("ACP registry icon URL was not allowed."));
   }
@@ -77,7 +80,8 @@ export function AcpRegistryAgentIcon({
   readonly fallbackClassName?: string;
 }) {
   const colorFilterId = useId();
-  const iconUrl = resolveOfficialAcpRegistryIconUrl(icon);
+  // t3code-disconnected: null also disables the raw <img> fallback after a failed fetch.
+  const iconUrl = ACP_REGISTRY_ENABLED ? resolveOfficialAcpRegistryIconUrl(icon) : null;
   const [image, setImage] = useState<{
     readonly iconUrl: string;
     readonly source: string;
