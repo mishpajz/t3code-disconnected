@@ -8,12 +8,19 @@ import * as Option from "effect/Option";
 import * as PlatformError from "effect/PlatformError";
 
 import type * as Electron from "electron";
+import { vi } from "vite-plus/test";
 
 import * as ElectronApp from "../electron/ElectronApp.ts";
 import * as DesktopAppIdentity from "./DesktopAppIdentity.ts";
 import * as DesktopAssets from "./DesktopAssets.ts";
 import * as DesktopConfig from "./DesktopConfig.ts";
 import * as DesktopEnvironment from "./DesktopEnvironment.ts";
+
+// t3code-disconnected: these tests cover upstream's app identity, so they turn the fork's off.
+vi.mock("@t3tools/shared/disconnected", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("@t3tools/shared/disconnected")>()),
+  DESKTOP_OWN_APP_IDENTITY: false,
+}));
 
 const defaultEnvironmentInput = {
   dirname: "/repo/apps/desktop/dist-electron",

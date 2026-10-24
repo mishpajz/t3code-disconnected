@@ -1,4 +1,5 @@
 import { type EnvironmentId, managedCapabilityDenial } from "@t3tools/contracts";
+import { T3_CONNECT_ENABLED } from "@t3tools/shared/disconnected";
 import { Atom } from "effect/reactivity";
 
 import { environmentPresentations } from "~/state/presentation";
@@ -13,6 +14,8 @@ export const canShareWithGuestAtom = Atom.family((environmentId: EnvironmentId) 
   Atom.make((get) => {
     const serverConfig = get(environmentPresentations.serverConfigsAtom).get(environmentId);
     return (
+      // t3code-disconnected: guest links run over T3 Connect, which is disabled (DISCONNECTED.md).
+      T3_CONNECT_ENABLED &&
       get(serverEnvironment.createGuestShare.permissionAtom(environmentId)) &&
       serverConfig?.settings.guestSharingEnabled === true &&
       managedCapabilityDenial(serverConfig.managedPolicy, "connect") === undefined

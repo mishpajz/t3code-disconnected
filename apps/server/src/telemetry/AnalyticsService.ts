@@ -1,5 +1,6 @@
 // T3 ingest retains events and forwards to PostHog; UUIDs deduplicate retries there.
 import * as HostProcess from "@t3tools/shared/HostProcess";
+import { ANALYTICS_ENABLED } from "@t3tools/shared/disconnected";
 import type { ClientOs } from "@t3tools/contracts";
 import * as Clock from "effect/Clock";
 import * as Config from "effect/Config";
@@ -119,7 +120,12 @@ function serverOsFromNodePlatform(platform: string): ClientOs {
 /** @public */
 /** @public */
 export const make = Effect.gen(function* () {
-  const telemetryConfig = yield* TelemetryEnvConfig;
+  const envTelemetryConfig = yield* TelemetryEnvConfig;
+  // t3code-disconnected: analytics is forced off (DISCONNECTED.md); T3CODE_TELEMETRY_ENABLED cannot turn it on.
+  const telemetryConfig = {
+    ...envTelemetryConfig,
+    enabled: ANALYTICS_ENABLED && envTelemetryConfig.enabled,
+  };
   const hostEnvironment = yield* HostProcess.Environment;
   const awaitingShellConsent = hostEnvironment.T3CODE_DESKTOP_SHELL_DISCOVERY_PENDING === "1";
   // A managed policy can switch analytics off over the environment, never on.

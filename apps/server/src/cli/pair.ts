@@ -6,6 +6,7 @@ import {
   PortSchema,
 } from "@t3tools/contracts";
 import { resolveWorktreeT3Home } from "@t3tools/shared/devHome";
+import { TAILSCALE_ENABLED } from "@t3tools/shared/disconnected";
 import * as HostProcess from "@t3tools/shared/HostProcess";
 import { DEFAULT_SIGNAL_EXPORT } from "@t3tools/shared/observability";
 import { buildPairingAppLink } from "@t3tools/shared/remote";
@@ -97,6 +98,16 @@ export class TailscaleUnavailableError extends Schema.TaggedError<TailscaleUnava
 ) {
   override get message(): string {
     return "Could not talk to Tailscale. Is tailscaled running? Try `tailscale status`.";
+  }
+}
+
+// t3code-disconnected: Tailscale is disabled (DISCONNECTED.md).
+export class TailscaleDisabledError extends Schema.TaggedError<TailscaleDisabledError>()(
+  "TailscaleDisabledError",
+  {},
+) {
+  override get message(): string {
+    return "Tailscale support is disabled in this build. Restart the server with a reachable --host instead.";
   }
 }
 
@@ -504,6 +515,8 @@ export const pairCommand = Command.make("pair", {
       const notes: Array<string> = [];
       let pairingBaseUrl: string;
       if (flags.tailscale) {
+        // t3code-disconnected: Tailscale is disabled (DISCONNECTED.md).
+        if (!TAILSCALE_ENABLED) return yield* new TailscaleDisabledError();
         // Serve stays on after this command exits, so refuse before turning it on.
         const policy = yield* ManagedPolicy.ManagedPolicy.pipe(Effect.provide(ManagedPolicy.layer));
         if (!ManagedLimits.allowsRemoteClients(policy)) {
@@ -522,11 +535,17 @@ export const pairCommand = Command.make("pair", {
         pairingBaseUrl = resolveDirectPairingBaseUrl(target.state);
         if (isLoopbackHost(new URL(pairingBaseUrl).hostname)) {
           notes.push(
-            "This URL is only reachable from this machine. To reach it from your other devices, run `t3 up`, or re-run with --tailscale.",
+            // t3code-disconnected: Tailscale and the runtime `t3 up` installs are disabled (DISCONNECTED.md).
+            TAILSCALE_ENABLED
+              ? "This URL is only reachable from this machine. To reach it from your other devices, run `t3 up`, or re-run with --tailscale."
+              : "This URL is only reachable from this machine. Restart the server with a reachable --host.",
           );
         } else if (target.state.privateNetworkOnly) {
           notes.push(
-            "This URL works only from this machine's local network. From elsewhere, re-run with --tailscale or use T3 Connect.",
+            // t3code-disconnected: Tailscale and T3 Connect are disabled (DISCONNECTED.md).
+            TAILSCALE_ENABLED
+              ? "This URL works only from this machine's local network. From elsewhere, re-run with --tailscale or use T3 Connect."
+              : "This URL works only from this machine's local network. From elsewhere, forward its port through a tunnel you run, such as a Dev Tunnel.",
           );
         }
         if (target.variant === "dev" && target.state.devUrl === undefined) {

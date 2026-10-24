@@ -1,4 +1,5 @@
 import * as NodeCrypto from "@effect/platform-node/NodeCrypto";
+import { vi } from "vite-plus/test";
 import * as NodeServices from "@effect/platform-node/NodeServices";
 import { ORCHESTRATION_PROTOCOL_VERSION } from "@t3tools/contracts";
 import { expect, it } from "@effect/vitest";
@@ -8,6 +9,7 @@ import * as Effect from "effect/Effect";
 import * as FileSystem from "effect/FileSystem";
 import * as Layer from "effect/Layer";
 
+import { T3_CONNECT_ENABLED } from "@t3tools/shared/disconnected";
 import { DEFAULT_SIGNAL_EXPORT } from "@t3tools/shared/observability";
 import * as HostProcess from "@t3tools/shared/HostProcess";
 import * as OtelEnvironment from "@t3tools/shared/otelEnvironment";
@@ -20,6 +22,12 @@ import {
 } from "../cloud/config.ts";
 import * as ServerConfig from "../config.ts";
 import * as ServerEnvironment from "./ServerEnvironment.ts";
+
+// t3code-disconnected: retain upstream install ownership coverage with self-updates enabled.
+vi.mock("@t3tools/shared/disconnected", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("@t3tools/shared/disconnected")>()),
+  RUNTIME_DOWNLOADS_ENABLED: true,
+}));
 
 const layerServerEnvironment = (baseDir: string) =>
   ServerEnvironment.layer.pipe(
@@ -259,7 +267,8 @@ it.layer(Layer.mergeAll(NodeServices.layer, NodeCrypto.layer))("ServerEnvironmen
 
         yield* secrets.set(RELAY_URL_SECRET, encode("https://relay.example"));
         const linked = yield* serverEnvironment.getDescriptor;
-        expect(linked.capabilities.agentActivityPublishing).toBe(true);
+        // t3code-disconnected: a stored link never advertises publishing while T3 Connect is disabled.
+        expect(linked.capabilities.agentActivityPublishing).toBe(T3_CONNECT_ENABLED);
 
         yield* secrets.set(PUBLISH_AGENT_ACTIVITY_SECRET, encode("false"));
         const disabled = yield* serverEnvironment.getDescriptor;

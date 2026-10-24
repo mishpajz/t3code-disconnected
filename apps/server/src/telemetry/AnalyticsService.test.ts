@@ -19,6 +19,7 @@ import * as HttpServer from "effect/http/HttpServer";
 import * as HttpServerRequest from "effect/http/HttpServerRequest";
 import * as HttpServerResponse from "effect/http/HttpServerResponse";
 import * as HostProcess from "@t3tools/shared/HostProcess";
+import { vi } from "vite-plus/test";
 
 import type { ManagedPolicyDocument } from "@t3tools/contracts";
 
@@ -26,6 +27,15 @@ import * as ServerConfig from "../config.ts";
 import * as ManagedPolicy from "../policy/ManagedPolicy.ts";
 import { getTelemetryIdentity } from "./Identify.ts";
 import * as AnalyticsService from "./AnalyticsService.ts";
+
+// t3code-disconnected: most tests here cover upstream's delivery, so they turn analytics on.
+const disconnectedGate = vi.hoisted(() => ({ analyticsEnabled: true }));
+vi.mock("@t3tools/shared/disconnected", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("@t3tools/shared/disconnected")>()),
+  get ANALYTICS_ENABLED() {
+    return disconnectedGate.analyticsEnabled;
+  },
+}));
 
 interface RecordedBatchRequest {
   readonly path: string;
@@ -177,6 +187,16 @@ const sendFor = (
   });
 
 it.layer(Layer.mergeAll(NodeServices.layer, NodeCrypto.layer))("AnalyticsService test", (it) => {
+  it.effect("t3code-disconnected: sends nothing even when T3CODE_TELEMETRY_ENABLED is set", () =>
+    Effect.gen(function* () {
+      disconnectedGate.analyticsEnabled = false;
+      const batches = yield* sendFor(10, respondWithStatus(204)).pipe(
+        Effect.ensuring(Effect.sync(() => (disconnectedGate.analyticsEnabled = true))),
+      );
+      assert.deepStrictEqual(batches, []);
+    }),
+  );
+
   it.effect("waits for desktop shell consent and honors a late telemetry opt-out", () =>
     Effect.gen(function* () {
       const env: NodeJS.ProcessEnv = { T3CODE_DESKTOP_SHELL_DISCOVERY_PENDING: "1" };

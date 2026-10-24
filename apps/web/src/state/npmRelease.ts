@@ -1,4 +1,5 @@
 import { type ServerConfig, ServerNpmReleaseError } from "@t3tools/contracts";
+import { NPM_RELEASE_CHECK_ENABLED } from "@t3tools/shared/disconnected";
 import * as Cause from "effect/Cause";
 import * as Effect from "effect/Effect";
 import * as Option from "effect/Option";
@@ -31,6 +32,8 @@ export function npmReleaseFailureMessage(cause: Cause.Cause<unknown>): string {
 
 export const npmReleaseAtom = Atom.family((spec: string) =>
   Atom.make((get) => {
+    // t3code-disconnected: no npm lookups or update UI when release checks are disabled.
+    if (!NPM_RELEASE_CHECK_ENABLED) return Effect.succeed(null);
     const primary = get(primaryEnvironmentIdAtom);
     // With the desktop's local server turned off there is no primary, so a connected server answers.
     const candidates =

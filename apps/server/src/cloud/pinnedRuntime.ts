@@ -1,3 +1,4 @@
+import { RUNTIME_DOWNLOADS_ENABLED } from "@t3tools/shared/disconnected";
 import * as Cause from "effect/Cause";
 import * as Clock from "effect/Clock";
 import * as Duration from "effect/Duration";
@@ -285,7 +286,8 @@ const installPinnedRuntime = Effect.fn("cloud.pinned_runtime.ensure_installed")(
   const alreadyPinned =
     entryExists && Option.isSome(sentinel) && sentinel.value.trim() === input.version;
   if (alreadyPinned) {
-    if (input.requirePublishedRelease === true) {
+    // t3code-disconnected: a local runtime is reused without looking up its release.
+    if (input.requirePublishedRelease === true && RUNTIME_DOWNLOADS_ENABLED) {
       const platformKey = cliArchivePlatformKey(input.platform, input.arch);
       if (platformKey === undefined) {
         return yield* new PinnedRuntimeInstallError({
@@ -297,6 +299,12 @@ const installPinnedRuntime = Effect.fn("cloud.pinned_runtime.ensure_installed")(
     input.onProgress?.({ stage: "cached" });
     yield* input.validate(paths);
     return paths;
+  }
+  // t3code-disconnected: service installs and updates may reuse local runtimes, never download.
+  if (!RUNTIME_DOWNLOADS_ENABLED) {
+    return yield* new PinnedRuntimeInstallError({
+      step: "runtime downloads are disabled in this build; install t3 manually",
+    });
   }
   if (versionDirExists) {
     yield* fs.remove(paths.versionDir, { recursive: true, force: true }).pipe(

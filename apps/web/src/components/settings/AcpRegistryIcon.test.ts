@@ -1,4 +1,13 @@
 import { beforeEach, describe, expect, it, vi } from "vite-plus/test";
+import * as Disconnected from "@t3tools/shared/disconnected";
+
+// t3code-disconnected: retain upstream CDN coverage; the disabled path is tested below.
+vi.mock("@t3tools/shared/disconnected", async (importOriginal) => ({
+  ...(await importOriginal<typeof Disconnected>()),
+  get ACP_REGISTRY_ENABLED() {
+    return true;
+  },
+}));
 
 import {
   loadCachedAcpRegistryIcon,
@@ -7,6 +16,15 @@ import {
 } from "./AcpRegistryIcon";
 
 describe("ACP Registry icon cache", () => {
+  it("t3code-disconnected: does not fetch or open the CDN icon cache", async () => {
+    using _gate = vi.spyOn(Disconnected, "ACP_REGISTRY_ENABLED", "get").mockReturnValue(false);
+    await expect(
+      loadCachedAcpRegistryIcon("https://cdn.agentclientprotocol.com/registry/icons/example.svg"),
+    ).rejects.toThrow("disabled");
+    expect(fetchIcon).not.toHaveBeenCalled();
+    expect(caches.open).not.toHaveBeenCalled();
+  });
+
   const stored = new Map<string, Response>();
   const match = vi.fn(async (url: string) => stored.get(url)?.clone());
   const put = vi.fn(async (url: string, response: Response) => {

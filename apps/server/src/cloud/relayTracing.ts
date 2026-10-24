@@ -1,3 +1,4 @@
+import { T3_CONNECT_ENABLED } from "@t3tools/shared/disconnected";
 import {
   nodeProcessRuntimeAttributes,
   processServiceInstanceId,
@@ -10,7 +11,8 @@ import * as ServerConfig from "../config.ts";
 import * as ManagedPolicy from "../policy/ManagedPolicy.ts";
 import { resolveRelayClientTracingConfig } from "./publicConfig.ts";
 
-const relayClientTracingConfig = resolveRelayClientTracingConfig();
+// t3code-disconnected: T3 Connect is disabled (DISCONNECTED.md), so relay traces are never exported.
+const relayClientTracingConfig = T3_CONNECT_ENABLED ? resolveRelayClientTracingConfig() : null;
 
 /** Relay traces leave the machine for T3 Connect, so a policy with `telemetry: false` stops them. */
 export const relayLayer = (

@@ -9,6 +9,12 @@ import {
 } from "./openVsxThemes";
 import { getThemeColorsForMode, themeColorToHex } from "./themePalette";
 
+// t3code-disconnected: these tests cover upstream's marketplace downloads.
+vi.mock("@t3tools/shared/disconnected", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("@t3tools/shared/disconnected")>()),
+  THEME_MARKETPLACE_ENABLED: true,
+}));
+
 const ASSET_ROOT = "https://open-vsx.org/api/demo/theme/1.0.0/file";
 
 function extensionDetail(overrides: Record<string, unknown> = {}) {
