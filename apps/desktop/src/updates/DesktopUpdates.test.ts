@@ -23,7 +23,8 @@ import { flushCallbacks, makeHarness } from "./updatesTestHarness.ts";
 
 // t3code-disconnected: these tests cover upstream's updater, so they turn auto-update on.
 const disconnectedGate = vi.hoisted(() => ({ desktopAutoUpdateEnabled: true }));
-vi.mock("@t3tools/shared/disconnected", () => ({
+vi.mock("@t3tools/shared/disconnected", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("@t3tools/shared/disconnected")>()),
   get DESKTOP_AUTO_UPDATE_ENABLED() {
     return disconnectedGate.desktopAutoUpdateEnabled;
   },

@@ -4,7 +4,8 @@ import { canAutoLoadChatMedia } from "./remoteMedia";
 
 // t3code-disconnected: keep upstream's remote media behavior covered with its gate on.
 const gate = vi.hoisted(() => ({ enabled: true }));
-vi.mock("@t3tools/shared/disconnected", () => ({
+vi.mock("@t3tools/shared/disconnected", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("@t3tools/shared/disconnected")>()),
   get REMOTE_FAVICONS_ENABLED() {
     return gate.enabled;
   },

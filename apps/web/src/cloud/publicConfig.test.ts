@@ -4,7 +4,10 @@ import { hasCloudPublicConfig } from "./publicConfig.ts";
 
 // t3code-disconnected: these tests cover upstream's T3 Connect config; the fork gate is
 // covered in publicConfig.disconnected.test.ts.
-vi.mock("@t3tools/shared/disconnected", () => ({ T3_CONNECT_ENABLED: true }));
+vi.mock("@t3tools/shared/disconnected", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("@t3tools/shared/disconnected")>()),
+  T3_CONNECT_ENABLED: true,
+}));
 
 afterEach(() => {
   vi.unstubAllEnvs();

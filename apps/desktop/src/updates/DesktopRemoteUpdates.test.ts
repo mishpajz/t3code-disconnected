@@ -24,7 +24,10 @@ import * as DesktopUpdates from "./DesktopUpdates.ts";
 import { makeHarness } from "./updatesTestHarness.ts";
 
 // t3code-disconnected: these tests cover upstream's updater, so they turn auto-update on.
-vi.mock("@t3tools/shared/disconnected", () => ({ DESKTOP_AUTO_UPDATE_ENABLED: true }));
+vi.mock("@t3tools/shared/disconnected", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("@t3tools/shared/disconnected")>()),
+  DESKTOP_AUTO_UPDATE_ENABLED: true,
+}));
 
 // The remote flow hops between the test runtime's fibers and the updater's
 // runPromise-driven event handlers, so settling needs real microtask turns,
