@@ -175,6 +175,37 @@ jobs:
       - name: Test
         run: vp run --filter @t3tools/web test
 
+  # Runs the server and web UI with no route to the internet and fails on any
+  # outbound attempt. See egress-check/README.md.
+  egress:
+    name: Egress check
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    # Upstream code still calls home until the DISCONNECTED.md patches land.
+    # Remove this once the check passes, so new outbound calls fail CI.
+    continue-on-error: true
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+        with:
+          sparse-checkout: |
+            /*
+            !/.repos/
+            !/apps/mobile/modules/t3-terminal/Vendor/**/*.a
+          sparse-checkout-cone-mode: false
+
+      - name: Run egress check
+        run: egress-check/check.sh 360
+
+      - name: Upload report
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: egress-check
+          path: egress-check/out/
+          if-no-files-found: ignore
+          retention-days: 30
+
   test_server:
     name: Test Server ${{ matrix.shard }}
     runs-on: ubuntu-latest

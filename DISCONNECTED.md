@@ -79,8 +79,11 @@ patched, beyond what is needed to keep the build working.
 - [ ] **Copilot launched through a wrapper.** Copilot-specific handling (nested subagents)
       also applies when Copilot is started through a wrapper executable, not only one named
       `copilot` (`packages/provider-acp-registry/src/server/adapter.ts`).
-- [ ] **Outbound check script.** Lists outbound URLs and tunnel or VPN tool names in the
-      source, to rerun after each upstream rebase.
+- [x] **Egress check.** Runs the server and web UI with no route to the internet and
+      records every DNS lookup and connection attempt ([`egress-check/`](./egress-check/README.md)).
+      Also runs in CI.
+- [ ] **Source check script.** Lists outbound URLs and tunnel or VPN tool names in the
+      source, to catch calls the egress check doesn't exercise.
 
 ## Remote access over Dev Tunnels
 
@@ -121,7 +124,7 @@ git rebase upstream/main
 
 The list of outbound calls above comes from an audit of upstream at commit
 [`bb7783e`](https://github.com/pingdotgg/t3code/commit/bb7783e295506ad423f527ed28a019836e331e8c); the fork itself started from a slightly newer `main`.
-After each rebase, rerun the outbound check and review anything new.
+After each rebase, run `egress-check/check.sh` and review anything new.
 
 ## CI and builds
 
