@@ -195,6 +195,7 @@ import * as ProjectHttp from "./project/http.ts";
 import * as NetService from "@t3tools/shared/Net";
 import * as RelayClient from "@t3tools/shared/relayClient";
 import { disableTailscaleServe, ensureTailscaleServe } from "@t3tools/tailscale";
+import { T3_CONNECT_ENABLED, TAILSCALE_ENABLED } from "@t3tools/shared/disconnected";
 import * as ServerActivation from "./serverActivation.ts";
 
 // Escaped MCP handoff provenance can exceed find-my-way's 100-character segment default.
@@ -489,6 +490,8 @@ const layerScheduledTaskWebhookOrigin = Layer.effect(
   Effect.gen(function* () {
     const secrets = yield* ServerSecretStore.ServerSecretStore;
     return Effect.gen(function* () {
+      // t3code-disconnected: T3 Connect is disabled (DISCONNECTED.md); webhooks never point at the relay.
+      if (!T3_CONNECT_ENABLED) return { relayHookBaseUrl: null };
       const [relayUrl, tunnelConfig] = yield* Effect.all([
         secrets.get(RELAY_URL_SECRET),
         secrets.get(CLOUD_ENDPOINT_RUNTIME_CONFIG),
@@ -795,7 +798,9 @@ const layerMakeServer = Layer.unwrap(
           );
       }),
     );
-    const layerTailscaleServe = config.tailscaleServeEnabled
+    // t3code-disconnected: Tailscale is disabled (DISCONNECTED.md).
+    const tailscaleServeEnabled = TAILSCALE_ENABLED && config.tailscaleServeEnabled;
+    const layerTailscaleServe = tailscaleServeEnabled
       ? Layer.effectDiscard(
           Effect.acquireRelease(
             Effect.gen(function* () {
@@ -850,6 +855,12 @@ const layerMakeServer = Layer.unwrap(
       : Layer.empty;
     const layerCloudDesiredLinkReconcile = Layer.effectDiscard(
       Effect.gen(function* () {
+        // t3code-disconnected: T3 Connect is disabled (DISCONNECTED.md). A link stored by an
+        // earlier upstream build never starts a tunnel, reconciles, or releases one on shutdown.
+        if (!T3_CONNECT_ENABLED) {
+          yield* Deferred.succeed(cloudLinkParked, undefined).pipe(Effect.orDie);
+          return;
+        }
         const cloudLink = yield* CloudLink.CloudLink;
         const releaseManagedTunnel = cloudLink.releaseManagedTunnelOnShutdown().pipe(
           Effect.timeout("10 seconds"),
@@ -1037,7 +1048,7 @@ const layerMakeServer = Layer.unwrap(
           Deferred.await(runtimeStateParked),
           Deferred.await(cloudLinkParked),
           Deferred.await(routesReady),
-          ...(config.tailscaleServeEnabled ? [Deferred.await(tailscaleParked)] : []),
+          ...(tailscaleServeEnabled ? [Deferred.await(tailscaleParked)] : []),
         ],
         { concurrency: "unbounded" },
       ).pipe(Effect.asVoid),

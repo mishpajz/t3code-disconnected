@@ -8,6 +8,12 @@ import { ThemeImportDialog } from "./ThemeImportDialog";
 
 const searchOpenVsxThemes = vi.hoisted(() => vi.fn());
 
+// t3code-disconnected: this test covers upstream's marketplace search.
+vi.mock("@t3tools/shared/disconnected", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("@t3tools/shared/disconnected")>()),
+  THEME_MARKETPLACE_ENABLED: true,
+}));
+
 vi.mock("../../openVsxThemes", () => ({
   searchOpenVsxThemes,
   importOpenVsxThemeExtension: vi.fn(),

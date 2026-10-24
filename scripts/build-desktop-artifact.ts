@@ -19,6 +19,12 @@ import { fromYaml } from "@t3tools/shared/schemaYaml";
 import * as HostProcess from "@t3tools/shared/HostProcess";
 import { clerkFrontendApiHostnameFromPublishableKey } from "@t3tools/shared/relayAuth";
 import { resolveSpawnCommand } from "@t3tools/shared/shell";
+import {
+  DESKTOP_OWN_APP_IDENTITY,
+  DISCONNECTED_DESKTOP_APP_ID,
+  DISCONNECTED_DESKTOP_PACKAGE_NAME,
+  DISCONNECTED_DESKTOP_PRODUCT_NAME,
+} from "@t3tools/shared/disconnected";
 import rootPackageJson from "../package.json" with { type: "json" };
 import desktopPackageJson from "../apps/desktop/package.json" with { type: "json" };
 import gnomeCaptureBundle from "../apps/desktop/gnome-extension/bundle.json" with { type: "json" };
@@ -62,7 +68,10 @@ import { Command, Flag } from "effect/cli";
 import { ChildProcess, ChildProcessSpawner } from "effect/process";
 
 const LINUX_ICON_SIZES = [16, 22, 24, 32, 48, 64, 128, 256, 512] as const;
-const DESKTOP_APP_ID = "com.t3tools.t3code";
+// t3code-disconnected: the fork installs as its own app (DISCONNECTED.md).
+const DESKTOP_APP_ID = DESKTOP_OWN_APP_IDENTITY
+  ? DISCONNECTED_DESKTOP_APP_ID
+  : "com.t3tools.t3code";
 const APPLE_TEAM_ID_PATTERN = /^[A-Z0-9]{10}$/u;
 
 const BuildPlatform = Schema.Literals(["mac", "linux", "win"]);
@@ -2749,6 +2758,7 @@ export function resolvePackageManagerUserAgent(packageManager: string): string {
 }
 
 export function resolveDesktopProductName(version: string): string {
+  if (DESKTOP_OWN_APP_IDENTITY) return DISCONNECTED_DESKTOP_PRODUCT_NAME;
   return resolveDesktopUpdateChannel(version) === "nightly"
     ? "T3 Code (Nightly)"
     : (desktopPackageJson.productName ?? "T3 Code");
@@ -3816,7 +3826,8 @@ const buildDesktopArtifactUnlocked = Effect.fn("buildDesktopArtifactUnlocked")(f
       ? path.join(stageAppDir, WINDOWS_SERVER_RESOURCE_SOURCE_DIR, WINDOWS_SERVER_ASAR_RESOURCE)
       : undefined;
   const stagePackageJson: StagePackageJson = {
-    name: "t3code",
+    // electron-builder names the Windows install folder after this.
+    name: DESKTOP_OWN_APP_IDENTITY ? DISCONNECTED_DESKTOP_PACKAGE_NAME : "t3code",
     version: appVersion,
     buildVersion: appVersion,
     t3codeCommitHash: commitHash,

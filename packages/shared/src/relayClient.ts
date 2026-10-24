@@ -22,6 +22,7 @@ import * as Semaphore from "effect/Semaphore";
 import { HttpClient, HttpClientRequest, HttpClientResponse } from "effect/http";
 import { ChildProcess, ChildProcessSpawner } from "effect/process";
 import { isWindowsRenameLock } from "./atomicWrite.ts";
+import { T3_CONNECT_ENABLED } from "./disconnected.ts";
 import * as HostProcess from "./HostProcess.ts";
 
 export const CLOUDFLARED_VERSION = "2026.10.4";
@@ -612,5 +613,30 @@ export const makeCloudflaredRelayClient = Effect.fn("cloudflared.make")(function
   return RelayClient.of({ resolve, install, installWithProgress, pruneManagedVersions });
 });
 
+// t3code-disconnected: T3 Connect is disabled (DISCONNECTED.md). cloudflared is never
+// resolved (not even from PATH), downloaded or run.
+const makeDisabledRelayClient = Effect.gen(function* () {
+  const status: RelayClientStatus = {
+    status: "unsupported",
+    platform: yield* HostProcess.Platform,
+    arch: yield* HostProcess.Architecture,
+    version: CLOUDFLARED_VERSION,
+  };
+  const disabled = new RelayClientInstallError({
+    reason: "unsupported_platform",
+    message: "T3 Connect is disabled in this build.",
+  });
+  return RelayClient.of({
+    resolve: Effect.succeed(status),
+    install: Effect.fail(disabled),
+    installWithProgress: Effect.fn("RelayClient.installWithProgress")(function* () {
+      return yield* disabled;
+    }),
+    pruneManagedVersions: Effect.void,
+  });
+});
+
 export const layerCloudflared = (options: CloudflaredRelayClientOptions) =>
-  Layer.effect(RelayClient, makeCloudflaredRelayClient(options));
+  T3_CONNECT_ENABLED
+    ? Layer.effect(RelayClient, makeCloudflaredRelayClient(options))
+    : Layer.effect(RelayClient, makeDisabledRelayClient);

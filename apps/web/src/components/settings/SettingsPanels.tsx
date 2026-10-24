@@ -20,6 +20,7 @@ import {
   type QuitConfirmationMode,
   SidebarProjectSortOrder,
 } from "@t3tools/contracts/settings";
+import { ANALYTICS_ENABLED } from "@t3tools/shared/disconnected";
 import { createModelSelection } from "@t3tools/shared/model";
 import * as Equal from "effect/Equal";
 import * as Schema from "effect/Schema";
@@ -2023,7 +2024,12 @@ export function AboutSettingsPanel() {
       <SettingsSection id="legal" title="Legal">
         <SettingsRow
           {...searchableSetting("privacy-policy")}
-          description="How we handle your data, including the anonymous usage data T3 Code collects."
+          // t3code-disconnected: product analytics are forced off (DISCONNECTED.md).
+          description={
+            ANALYTICS_ENABLED
+              ? "How we handle your data, including the anonymous usage data T3 Code collects."
+              : "How upstream T3 Code handles your data. This build collects no usage data."
+          }
           control={
             <Button
               render={<a href={PRIVACY_POLICY_URL} target="_blank" rel="noreferrer noopener" />}

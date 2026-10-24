@@ -16,6 +16,10 @@ import * as DesktopConfig from "./DesktopConfig.ts";
 import { resolveLinuxDesktopEntryName } from "./DesktopEarlyElectronStartup.ts";
 import { resolveDesktopBaseDir, resolveDesktopStateDir } from "./DesktopStatePaths.ts";
 import { isNightlyDesktopVersion } from "../updates/updateChannels.ts";
+import {
+  DESKTOP_OWN_APP_IDENTITY,
+  DISCONNECTED_DESKTOP_APP_ID,
+} from "@t3tools/shared/disconnected";
 import type { OtlpProtocol } from "@t3tools/shared/observability";
 
 export interface MakeDesktopEnvironmentInput {
@@ -228,8 +232,13 @@ const make = Effect.fn("desktop.environment.make")(function* (
     otlpProtocol: config.otlpProtocol,
     branding,
     displayName,
+    // t3code-disconnected: must match the build's appId, which the installer's shortcuts carry.
     appUserModelId: Option.getOrElse(config.appUserModelIdOverride, () =>
-      isDevelopment ? "com.t3tools.t3code.dev" : "com.t3tools.t3code",
+      isDevelopment
+        ? "com.t3tools.t3code.dev"
+        : DESKTOP_OWN_APP_IDENTITY
+          ? DISCONNECTED_DESKTOP_APP_ID
+          : "com.t3tools.t3code",
     ),
     linuxDesktopEntryName: resolveLinuxDesktopEntryName(isDevelopment),
     linuxWmClass: isDevelopment ? "t3code-dev" : "t3code",
