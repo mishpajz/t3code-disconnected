@@ -300,6 +300,40 @@ it.layer(NodeServices.layer)("cli config resolution", (it) => {
     }),
   );
 
+  // t3code-disconnected: Tailscale is disabled (DISCONNECTED.md).
+  it.effect("keeps Tailscale Serve off when a flag, env var or bootstrap turns it on", () =>
+    Effect.gen(function* () {
+      const baseDir = yield* FileSystem.FileSystem.pipe(
+        Effect.flatMap((fs) => fs.makeTempDirectoryScoped({ prefix: "t3-cli-tailscale-off-" })),
+      );
+      const resolve = (
+        flags: ReturnType<typeof minimalDesktopFlags>,
+        env: Record<string, string>,
+      ) =>
+        resolveServerConfig(flags, Option.none()).pipe(
+          Effect.provide(
+            Layer.mergeAll(ConfigProvider.layer(ConfigProvider.fromEnv({ env })), NetService.layer),
+          ),
+        );
+      const fromFlag = yield* resolve(
+        { ...minimalDesktopFlags(baseDir), tailscaleServeEnabled: Option.some(true) },
+        {},
+      );
+      const fromEnv = yield* resolve(minimalDesktopFlags(baseDir), {
+        T3CODE_TAILSCALE_SERVE: "true",
+      });
+      const fd = yield* openBootstrapFd(makeDesktopBootstrap({ tailscaleServeEnabled: true }));
+      const fromBootstrap = yield* resolve(minimalDesktopFlags(baseDir), {
+        T3CODE_BOOTSTRAP_FD: String(fd),
+      });
+      expect([fromFlag, fromEnv, fromBootstrap].map((c) => c.tailscaleServeEnabled)).toEqual([
+        false,
+        false,
+        false,
+      ]);
+    }),
+  );
+
   it.effect("preserves explicit false CLI boolean flags over env and bootstrap values", () =>
     Effect.gen(function* () {
       const { join } = yield* Path.Path;

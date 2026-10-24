@@ -1,5 +1,7 @@
 import * as NodeServices from "@effect/platform-node/NodeServices";
 import { describe, expect, it } from "@effect/vitest";
+import { vi } from "vite-plus/test";
+import * as Disconnected from "@t3tools/shared/disconnected";
 import {
   DEFAULT_SERVER_SETTINGS,
   ProviderDriverKind,
@@ -22,6 +24,14 @@ import * as ChildProcessSpawner from "effect/process/ChildProcessSpawner";
 
 import * as AcpRegistrySupport from "./AcpRegistrySupport.ts";
 import * as TestProviderHost from "@t3tools/provider-testing/TestProviderHost";
+
+// t3code-disconnected: retain upstream registry coverage; the disabled path is tested below.
+vi.mock("@t3tools/shared/disconnected", async (importOriginal) => ({
+  ...(await importOriginal<typeof Disconnected>()),
+  get ACP_REGISTRY_ENABLED() {
+    return true;
+  },
+}));
 
 const registryUrl = "https://registry.test/registry.json";
 const archiveUrl = "https://registry.test/example-agent.bin";
@@ -138,6 +148,78 @@ const makeFakeUvToolchain = Effect.fn("AcpRegistrySupport.test.makeFakeUvToolcha
 });
 
 describe("AcpRegistrySupport", () => {
+  it.effect(
+    "t3code-disconnected: blocks cached registry installs and keeps local commands working",
+    () =>
+      Effect.gen(function* () {
+        using _gate = vi.spyOn(Disconnected, "ACP_REGISTRY_ENABLED", "get").mockReturnValue(false);
+        const fileSystem = yield* FileSystem.FileSystem;
+        const cacheDir = yield* fileSystem.makeTempDirectoryScoped({
+          prefix: "t3-acp-disconnected-",
+        });
+        yield* fileSystem.makeDirectory(`${cacheDir}/acp-registry`);
+        const requests: string[] = [];
+        let spawnAttempts = 0;
+        const resolver = yield* AcpRegistrySupport.makeAcpRegistryCatalog({
+          cacheDir,
+          toolsDir: `${cacheDir}/tools`,
+          registryUrl,
+        }).pipe(
+          Effect.provideService(
+            ChildProcessSpawner.ChildProcessSpawner,
+            ChildProcessSpawner.make(() => {
+              spawnAttempts += 1;
+              return Effect.die("unexpected registry package manager");
+            }),
+          ),
+          Effect.provide(
+            layerResolver((request) => {
+              requests.push(request.url);
+              return Effect.die("unexpected registry request");
+            }),
+          ),
+        );
+        for (const distribution of [
+          { npx: { package: "@example/acp@1.2.3" } },
+          { uvx: { package: "example-acp==1.2.3" } },
+          { binary: { "linux-x86_64": { archive: archiveUrl, cmd: "agent" } } },
+        ]) {
+          yield* fileSystem.writeFileString(
+            `${cacheDir}/acp-registry/registry.json`,
+            makeRegistry(makeAgent(distribution)),
+          );
+          expect(yield* resolver.search({ query: "" })).toEqual({ agents: [] });
+          for (const error of [
+            yield* resolver.prepare({ agentId: "example-agent" }).pipe(Effect.flip),
+            yield* resolver.inspect(settings()).pipe(Effect.flip),
+            yield* resolver.resolve(settings(), cacheDir).pipe(Effect.flip),
+          ]) {
+            expect(error).toMatchObject({
+              reason: "registry_unavailable",
+              detail: expect.stringContaining("Local command"),
+            });
+          }
+        }
+        const local = settings({
+          source: "local",
+          commandPath: process.execPath,
+          commandArgs: ["--version"],
+        });
+        expect(yield* resolver.inspect(local)).toMatchObject({
+          status: "ready",
+          distribution: "local",
+        });
+        expect((yield* resolver.resolve(local, cacheDir)).spawn).toMatchObject({
+          command: process.execPath,
+          args: ["--version"],
+          shell: false,
+        });
+        expect(requests).toEqual([]);
+        expect(spawnAttempts).toBe(0);
+        expect(yield* fileSystem.exists(`${cacheDir}/tools`)).toBe(false);
+      }).pipe(Effect.scoped, Effect.provide(NodeServices.layer)),
+  );
+
   it("selects the preferred compatible distribution", () => {
     const agent = makeAgent({
       binary: {

@@ -21,7 +21,21 @@ patched, beyond what is needed to keep the build working.
   clients (cloudflared, Tailscale). Remote access uses whatever transport you already
   have, such as [Microsoft Dev Tunnels](#remote-access-over-dev-tunnels).
 - **Easy to keep up with upstream.** Changes are small and gated in place so rebases stay
-  cheap. Whole subsystems are deleted only when they would otherwise ship tunnel clients.
+  cheap. Subsystems are switched off at their entry points rather than deleted.
+
+## The disconnected switch
+
+[`packages/contracts/src/disconnected.ts`](./packages/contracts/src/disconnected.ts) holds the
+master `DISCONNECTED` constant, in contracts so settings defaults can follow it
+(`PROVIDER_UPDATE_CHECKS_DEFAULT`).
+[`packages/shared/src/disconnected.ts`](./packages/shared/src/disconnected.ts) holds the
+per-feature gates derived from it (`T3_CONNECT_ENABLED`, `TAILSCALE_ENABLED`,
+`ANALYTICS_ENABLED`, `DESKTOP_AUTO_UPDATE_ENABLED`, `BITBUCKET_ENABLED` and those listed under
+[Patched to stay local](#patched-to-stay-local)). Each gate is ANDed into upstream's own
+switch for the feature, so no build value, environment variable, setting or stored secret can
+turn it back on. Defaults only change what a fresh install starts with; users can still opt
+in. Fork patches are marked with a `t3code-disconnected:` comment; tests that cover upstream's
+enabled behaviour are skipped or force the gate on.
 
 ## Non-goals
 
@@ -29,56 +43,98 @@ patched, beyond what is needed to keep the build working.
   on) talk to their own services. This fork does not change that; use the ones you are
   allowed to use.
 - **Git hosting and source-control integrations.** These talk to the hosts you configure
-  (for example Azure DevOps through `az`). They stay.
+  (for example Azure DevOps through `az`). They stay, except Bitbucket, which contacts
+  `api.bitbucket.org` on its own and is not needed here.
 - **The built-in browser.** It can still download Chrome on first use and browse wherever
   you or an agent navigate.
+- **Web content in chat and pull requests.** Images, audio and video embedded in messages or
+  pull request descriptions load like any page you browse. Link and tool favicons and
+  provider-supplied logos load too; favicons for links come from Google's favicon service
+  (`packages/shared/src/favicon.ts`).
 - **Hosted web app and mobile app.** See [Scope](#scope). The mobile app also depends on
   T3 Connect for push notifications.
 
 ## Changes
 
-### Removed from the build
+### Disabled by the disconnected switch
 
-- [ ] **T3 Connect.** The cloud relay, account linking, managed endpoints, agent-activity
-      publishing and held-webhook wake-ups (`apps/server/src/cloud`, `apps/server/src/relay`,
-      `packages/client-runtime/src/relay`).
-- [ ] **cloudflared.** Downloaded and run only for T3 Connect (`packages/shared/src/relayClient.ts`).
-- [ ] **Clerk sign-in.** Only used by T3 Connect (`apps/web/src/components/clerk`,
+- [x] **T3 Connect.** The cloud relay, account linking, managed endpoints, agent-activity
+      publishing, held-webhook wake-ups and guest links, whose setting and share actions are
+      hidden (`apps/server/src/cloud`, `apps/server/src/relay`,
+      `packages/client-runtime/src/relay`, `apps/web/src/components/chat/guestShareAvailability.ts`).
+- [x] **cloudflared.** Downloaded and run only for T3 Connect (`packages/shared/src/relayClient.ts`).
+- [x] **Clerk sign-in.** Only used by T3 Connect (`apps/web/src/components/clerk`,
       `apps/desktop/src/app/DesktopClerk.ts`).
-- [ ] **Tailscale integration.** It never installs Tailscale, but it runs the `tailscale`
+- [x] **Tailscale integration.** It never installs Tailscale, but it runs the `tailscale`
       command when network access or Tailscale Serve is on (`packages/tailscale`,
       `apps/desktop/src/backend/tailscaleEndpointProvider.ts`,
       `apps/server/src/environment/DirectEndpoints.ts`).
+- [x] **Bitbucket integration.** It checks sign-in against `api.bitbucket.org` whenever source
+      control settings load, even with no token configured. Its server driver is left out, so
+      Bitbucket is not listed and Bitbucket remotes read as unsupported
+      (`apps/server/src/sourceControl/sourceControlDefinitions.ts`).
 
 ### Turned off by default
 
-- [ ] **Product analytics** (PostHog at `ingest.t3.codes`): forced off
+- [x] **Product analytics** (PostHog at `ingest.t3.codes`): forced off by
+      `ANALYTICS_ENABLED`, even with `T3CODE_TELEMETRY_ENABLED=true`
       (`apps/server/src/telemetry/AnalyticsService.ts`).
-- [ ] **Desktop auto-update checks** against GitHub releases: off
+- [x] **Desktop auto-update checks** against GitHub releases: forced off by
+      `DESKTOP_AUTO_UPDATE_ENABLED`; the updater reports itself disabled and never checks
       (`apps/desktop/src/updates/DesktopUpdates.ts`).
-- [ ] **Model list download** from GitHub and **provider version checks**:
-      `enableProviderUpdateChecks` defaults to `false`
-      (`apps/server/src/provider/ModelManifest.ts`,
-      `packages/provider-core/src/server/maintenanceResolver.ts`).
-- [ ] **OpenTelemetry export**: stays unconfigured; no endpoints are baked into builds.
+- [x] **Model list download** from GitHub and **provider version checks**:
+      `enableProviderUpdateChecks` defaults to `false` and can be turned on in
+      **Settings → Maintenance** (`packages/contracts/src/settings.ts`,
+      `apps/server/src/provider/ModelManifest.ts`). Updating a provider from Settings still
+      looks up its latest version, since you start that yourself.
+- [x] **OpenTelemetry export**: stays unconfigured; no endpoints are baked into builds. The
+      only build-time OTLP endpoint is for relay tracing, which is off with T3 Connect. Export
+      to a receiver you configure in **Settings → General → Diagnostics** still works.
 
 ### Patched to stay local
 
-- [ ] **npm version check** from the web UI every five minutes (`apps/web/src/state/npmRelease.ts`).
-- [ ] **CLI self-update and runtime downloads** (`t3 update`, npm launcher, SSH bootstrap).
-- [ ] **LiteLLM pricing** fetched from GitHub: use bundled rates
-      (`apps/server/src/usage/UsageService.ts`).
-- [ ] **ACP registry**: local ACP commands only, no registry index, package downloads or CDN
-      icons (`packages/provider-acp-registry`, `apps/web/src/components/settings/AcpRegistryIcon.tsx`).
-- [ ] **Favicons and external images** in chat and links: no Google favicon service
-      (`packages/shared/src/favicon.ts`).
-- [ ] **Theme marketplace** (open-vsx.org): hidden (`apps/web/src/openVsxThemes.ts`).
+- [x] **npm version check** from the web UI every five minutes: never runs, so no npm-driven
+      update prompt appears (`NPM_RELEASE_CHECK_ENABLED`, `apps/web/src/state/npmRelease.ts`).
+- [x] **CLI self-update and runtime downloads** (`RUNTIME_DOWNLOADS_ENABLED`): `t3 update` and
+      server self-update report that they are disabled; server update notices ask you to install
+      the matching build instead of copying an `npm`/`npx` command that would fetch upstream; the
+      npm launcher and background service only start a runtime that is already installed; SSH
+      environments run the `t3` already on the remote host's `PATH` and fail with install
+      instructions if there is none; the startup error screen suggests `t3 triage` instead of
+      `npx t3 triage` and has no link to reinstall from t3.codes (`apps/server/src/cli/update.ts`,
+      `apps/server/src/cloud`, `apps/web/src/components/ServerUpdateAction.tsx`,
+      `apps/web/src/lib/bootError.ts`, `scripts/npm-launcher`, `packages/ssh/src/tunnel.ts`).
+- [x] **LiteLLM pricing** fetched from GitHub: usage costs use a bundled snapshot of the rates
+      instead, even on refresh (`REMOTE_PRICING_ENABLED`,
+      `apps/server/src/usage/usageBundledRates.ts`). Price overrides and provider-reported
+      costs still apply.
+- [x] **ACP registry**: local ACP commands only, no registry index, package downloads or CDN
+      icons (`ACP_REGISTRY_ENABLED`, `packages/provider-acp-registry`,
+      `apps/web/src/components/settings/AcpRegistryIcon.tsx`).
+- [x] **Theme marketplace** (open-vsx.org): hidden; importing theme files still works
+      (`THEME_MARKETPLACE_ENABLED`, `apps/web/src/openVsxThemes.ts`).
+- [x] **Prompt links** to app.t3.codes: the **Copy prompt link** button on messages and the
+      command palette's copy prompt link actions are hidden, since opening such a link sends
+      the prompt to T3's hosted app (`PROMPT_LINKS_ENABLED`,
+      `apps/web/src/components/promptLinks/copyPromptLink.ts`).
+- [x] **Cloud VM check**: a background service with no `T3CODE_HOST` no longer connects to the
+      cloud metadata address `169.254.169.254` to decide whether to hide its LAN addresses, so
+      it always lists them (`CLOUD_METADATA_PROBE_ENABLED`,
+      `apps/server/src/environment/DirectEndpoints.ts`).
 
 ### Other changes
 
 - [ ] **Copilot launched through a wrapper.** Copilot-specific handling (nested subagents)
       also applies when Copilot is started through a wrapper executable, not only one named
       `copilot` (`packages/provider-acp-registry/src/server/adapter.ts`).
+- [x] **Own desktop app identity.** Packaged builds install as **T3 Code Disconnected**, app ID
+      `com.t3tools.t3code.disconnected`, in their own folder (`%LOCALAPPDATA%\Programs\t3code-disconnected`
+      on Windows) with their own profile folder (`t3code-disconnected`). With upstream's identity,
+      Windows and package managers treat the fork as upstream T3 Code, upstream's installer or
+      updater can replace it, and a running upstream app takes over its window. The profile
+      starts empty and is not copied from upstream's `t3code-v2`. Threads and projects in
+      `~/.t3` are shared as before (`DESKTOP_OWN_APP_IDENTITY`, `scripts/build-desktop-artifact.ts`,
+      `apps/desktop/src/app/DesktopUserData.ts`).
 - [x] **Egress check.** Runs the server and web UI with no route to the internet and
       records every DNS lookup and connection attempt ([`egress-check/`](./egress-check/README.md)).
       Runs before every Windows installer build.

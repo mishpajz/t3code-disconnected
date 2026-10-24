@@ -1,5 +1,11 @@
 # Updating T3 Code
 
+> [!NOTE]
+> In t3code-disconnected, server self-update, `t3 update`, and the desktop auto-updater are
+> disabled, so the update button only updates providers, and the `npm`/`npx` commands below would
+> install upstream T3 Code. Update by installing a new t3code-disconnected build on each machine.
+> Version-mismatch checks still work. See [DISCONNECTED.md](../../DISCONNECTED.md).
+
 The app you use and the server running your agents can be on different machines.
 When a server is behind your web or desktop app, an update notice appears in the
 conversation and **Settings → Connections**. Update the machine named in that
