@@ -145,6 +145,35 @@ const layerInstallRuntime = (platform: NodeJS.Platform) =>
   );
 
 describe("RelayClient", () => {
+  it.effect(
+    "t3code-disconnected: the server layer never resolves, downloads or runs cloudflared",
+    () => {
+      const commands: Array<string> = [];
+      return Effect.gen(function* () {
+        const client = yield* RelayClient.RelayClient;
+        expect((yield* client.resolve).status).toBe("unsupported");
+        expect((yield* Effect.flip(client.install)).reason).toBe("unsupported_platform");
+        expect(commands).toEqual([]);
+      }).pipe(
+        Effect.provide(
+          RelayClient.layerCloudflared({ baseDir: "/nonexistent" }).pipe(
+            Layer.provide(
+              Layer.mergeAll(
+                NodeServices.layer,
+                layerHttpClient(new Uint8Array()),
+                layerSpawner(commands),
+                layerHostRuntime({
+                  PATH: "/usr/bin",
+                  T3CODE_CLOUDFLARED_PATH: "/usr/bin/cloudflared",
+                }),
+              ),
+            ),
+          ),
+        ),
+      );
+    },
+  );
+
   it.effect("cancels a contended install without removing the other installer's lock", () =>
     Effect.gen(function* () {
       const fileSystem = yield* FileSystem.FileSystem;

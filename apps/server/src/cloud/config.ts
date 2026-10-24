@@ -2,6 +2,7 @@ import {
   RelayManagedEndpointOrigin,
   RelayManagedEndpointRuntimeConfig,
 } from "@t3tools/contracts/relay";
+import { T3_CONNECT_ENABLED } from "@t3tools/shared/disconnected";
 import * as Effect from "effect/Effect";
 import * as Option from "effect/Option";
 import * as Schema from "effect/Schema";
@@ -68,6 +69,8 @@ export const readAgentActivityPublishingActive: (
     // Empty strings are as unconfigured as missing files: the publisher's
     // truthiness gate skips them, so the capability must too.
     return (
+      // t3code-disconnected: T3 Connect is disabled (DISCONNECTED.md); stored link secrets do not count.
+      T3_CONNECT_ENABLED &&
       isAgentActivityPublishingEnabledValue(enabled) &&
       url !== null &&
       url !== "" &&

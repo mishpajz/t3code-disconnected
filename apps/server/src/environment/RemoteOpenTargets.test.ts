@@ -1,6 +1,7 @@
 // @effect-diagnostics nodeBuiltinImport:off -- replace the native OS lookup and sync its ESM bindings.
 import * as NodeModule from "node:module";
 import { it } from "@effect/vitest";
+import { TAILSCALE_ENABLED } from "@t3tools/shared/disconnected";
 import * as HostProcess from "@t3tools/shared/HostProcess";
 import * as NetService from "@t3tools/shared/Net";
 import * as Effect from "effect/Effect";
@@ -98,6 +99,10 @@ const TAILSCALE_UP = { status: STATUS_UP, prefs: prefsJson({ RunSSH: false, Want
 const TAILSCALE_SSH = { status: STATUS_UP, prefs: prefsJson({ RunSSH: true, WantRunning: true }) };
 const TAILSCALE_DOWN = { status: { exitCode: 1, stdout: "" }, prefs: { exitCode: 1, stdout: "" } };
 
+// t3code-disconnected: Tailscale is disabled (DISCONNECTED.md). These cover upstream
+// behaviour that only runs with Tailscale enabled.
+const itTailscale = it.effect.skipIf(!TAILSCALE_ENABLED);
+
 describe("RemoteOpenTargets", () => {
   it.effect("advertises nothing when no sshd accepts and Tailscale SSH is off", () =>
     Effect.gen(function* () {
@@ -111,7 +116,7 @@ describe("RemoteOpenTargets", () => {
     }),
   );
 
-  it.effect("advertises only the tailnet name when Tailscale SSH serves without sshd", () =>
+  itTailscale("advertises only the tailnet name when Tailscale SSH serves without sshd", () =>
     Effect.gen(function* () {
       const targets = yield* resolveTargets({
         sshd: { ipv4: false, ipv6: false },
@@ -122,6 +127,32 @@ describe("RemoteOpenTargets", () => {
       expect(targets).toEqual([
         { kind: "tailscale", host: "bb-1.tail1234.ts.net", username: "t3-user" },
       ]);
+    }),
+  );
+
+  // t3code-disconnected: Tailscale is disabled (DISCONNECTED.md).
+  it.effect("never runs tailscale when resolving SSH targets", () =>
+    Effect.gen(function* () {
+      const targets = yield* Effect.flatMap(RemoteOpenTargets.RemoteOpenTargets, (service) =>
+        service.resolveTargets(),
+      ).pipe(
+        Effect.provideService(HostProcess.Hostname, "bb-1"),
+        Effect.provideService(HostProcess.Username, "t3-user"),
+        Effect.provide(
+          RemoteOpenTargets.layer.pipe(
+            Layer.provide(
+              Layer.mergeAll(
+                layerNet({ ipv4: true, ipv6: false }),
+                Layer.succeed(
+                  ChildProcessSpawner.ChildProcessSpawner,
+                  ChildProcessSpawner.make(() => Effect.die("unexpected tailscale process")),
+                ),
+              ),
+            ),
+          ),
+        ),
+      );
+      expect(targets).toEqual([{ kind: "mdns", host: "bb-1.local", username: "t3-user" }]);
     }),
   );
 

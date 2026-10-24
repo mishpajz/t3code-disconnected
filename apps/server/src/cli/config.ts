@@ -1,3 +1,4 @@
+import { TAILSCALE_ENABLED } from "@t3tools/shared/disconnected";
 import * as NetService from "@t3tools/shared/Net";
 import {
   OtlpHeadersFromString,
@@ -386,14 +387,17 @@ export const resolveServerConfig = Effect.fn("config.resolveServerConfig")(funct
     ),
     () => Boolean(devUrl),
   );
-  const tailscaleServeEnabled = Option.getOrElse(
-    resolveOptionPrecedence(
-      normalizedFlags.tailscaleServeEnabled,
-      Option.fromUndefinedOr(env.tailscaleServeEnabled),
-      Option.fromUndefinedOr(bootstrap?.tailscaleServeEnabled),
-    ),
-    () => false,
-  );
+  // t3code-disconnected: Tailscale is disabled (DISCONNECTED.md).
+  const tailscaleServeEnabled =
+    TAILSCALE_ENABLED &&
+    Option.getOrElse(
+      resolveOptionPrecedence(
+        normalizedFlags.tailscaleServeEnabled,
+        Option.fromUndefinedOr(env.tailscaleServeEnabled),
+        Option.fromUndefinedOr(bootstrap?.tailscaleServeEnabled),
+      ),
+      () => false,
+    );
   const tailscaleServePort = Option.getOrElse(
     resolveOptionPrecedence(
       normalizedFlags.tailscaleServePort,

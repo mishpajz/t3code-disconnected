@@ -1,3 +1,4 @@
+import { T3_CONNECT_ENABLED } from "@t3tools/shared/disconnected";
 import * as Effect from "effect/Effect";
 import * as Layer from "effect/Layer";
 import * as Schedule from "effect/Schedule";
@@ -19,7 +20,9 @@ const wakeHeldHooks = Effect.fn("HeldHooksWaker.wake")(function* () {
   return pending;
 });
 
-export const layer = Layer.effectDiscard(
+// t3code-disconnected: T3 Connect is disabled (DISCONNECTED.md), so held webhooks are never
+// requested from the relay, whatever link secrets are stored.
+const layerEnabled = Layer.effectDiscard(
   Effect.gen(function* () {
     const runtime = yield* CloudManagedEndpointRuntime.CloudManagedEndpointRuntime;
     const wake = wakeHeldHooks().pipe(
@@ -41,3 +44,5 @@ export const layer = Layer.effectDiscard(
     );
   }),
 );
+
+export const layer = T3_CONNECT_ENABLED ? layerEnabled : Layer.empty;

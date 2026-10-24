@@ -14,6 +14,7 @@ import * as ChildProcessSpawner from "effect/process/ChildProcessSpawner";
 import * as NodeNet from "node:net";
 import * as NodeOS from "node:os";
 
+import { TAILSCALE_ENABLED } from "@t3tools/shared/disconnected";
 import { isPrivateNetworkHost, isTailnetHost } from "@t3tools/shared/hostClassification";
 
 import * as ServerConfig from "../config.ts";
@@ -112,7 +113,8 @@ export const make = Effect.gen(function* () {
     // listed once it answers as this server: Serve setup can fail without
     // stopping startup. Anything slower than the probe leaves it out rather
     // than holding back the addresses already found.
-    if (config.tailscaleServeEnabled) {
+    // t3code-disconnected: Tailscale is disabled (DISCONNECTED.md).
+    if (TAILSCALE_ENABLED && config.tailscaleServeEnabled) {
       const servedUrl = yield* readTailscaleStatus.pipe(
         Effect.map((status) => status.magicDnsName),
         Effect.flatMap((magicDnsName) => {
