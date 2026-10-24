@@ -475,4 +475,7 @@ it.layer(NodeServices.layer)("pruning runtimes on start", (it) => {
 });
 
 // t3code-disconnected: preserve upstream enabled behavior; disabled behavior has focused coverage.
-vi.mock("@t3tools/shared/disconnected", () => ({ RUNTIME_DOWNLOADS_ENABLED: true }));
+vi.mock("@t3tools/shared/disconnected", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("@t3tools/shared/disconnected")>()),
+  RUNTIME_DOWNLOADS_ENABLED: true,
+}));

@@ -22,7 +22,8 @@ import * as AnalyticsService from "./AnalyticsService.ts";
 
 // t3code-disconnected: most tests here cover upstream's delivery, so they turn analytics on.
 const disconnectedGate = vi.hoisted(() => ({ analyticsEnabled: true }));
-vi.mock("@t3tools/shared/disconnected", () => ({
+vi.mock("@t3tools/shared/disconnected", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("@t3tools/shared/disconnected")>()),
   get ANALYTICS_ENABLED() {
     return disconnectedGate.analyticsEnabled;
   },
