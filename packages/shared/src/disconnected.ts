@@ -10,12 +10,16 @@
  * env vars, settings, stored secrets), so the fork gate always wins: if upstream
  * turns a feature on, it still stays off while DISCONNECTED is true.
  */
-
-/** Master switch. While true, every feature below is off regardless of upstream configuration. */
-const DISCONNECTED: boolean = true;
+import { DISCONNECTED } from "@t3tools/contracts/disconnected";
 
 /** T3 Connect: cloud relay, account linking, managed endpoints, cloudflared and Clerk sign-in. */
 export const T3_CONNECT_ENABLED = !DISCONNECTED;
 
 /** Tailscale integration: running the `tailscale` command and Tailscale Serve. */
 export const TAILSCALE_ENABLED = !DISCONNECTED;
+
+/** Product analytics sent to T3's PostHog ingest endpoint. */
+export const ANALYTICS_ENABLED = !DISCONNECTED;
+
+/** Desktop auto-update checks and downloads from the release feed. */
+export const DESKTOP_AUTO_UPDATE_ENABLED = !DISCONNECTED;

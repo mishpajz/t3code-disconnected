@@ -4,6 +4,7 @@
  * copy from a new event.
  */
 import * as HostProcess from "@t3tools/shared/HostProcess";
+import { ANALYTICS_ENABLED } from "@t3tools/shared/disconnected";
 import type { ClientOs } from "@t3tools/contracts";
 import * as Clock from "effect/Clock";
 import * as Config from "effect/Config";
@@ -135,7 +136,12 @@ function serverOsFromNodePlatform(platform: string): ClientOs {
 /** @public */
 /** @public Service construction is part of the canonical Effect module API. */
 export const make = Effect.gen(function* () {
-  const telemetryConfig = yield* TelemetryEnvConfig;
+  const envTelemetryConfig = yield* TelemetryEnvConfig;
+  // t3code-disconnected: analytics is forced off (DISCONNECTED.md); T3CODE_TELEMETRY_ENABLED cannot turn it on.
+  const telemetryConfig = {
+    ...envTelemetryConfig,
+    enabled: ANALYTICS_ENABLED && envTelemetryConfig.enabled,
+  };
   const httpClient = yield* HttpClient.HttpClient;
   const serverConfig = yield* ServerConfig.ServerConfig;
   const { distinctId, installId } = yield* getTelemetryIdentity;

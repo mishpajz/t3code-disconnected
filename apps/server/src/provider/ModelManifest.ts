@@ -13,6 +13,7 @@ import * as Schema from "effect/Schema";
 import * as Semaphore from "effect/Semaphore";
 import { HttpClient, HttpClientResponse } from "effect/http";
 
+import { PROVIDER_UPDATE_CHECKS_DEFAULT } from "@t3tools/contracts/disconnected";
 import { writeFileStringAtomically } from "@t3tools/shared/atomicWrite";
 import { ServerConfig } from "../config.ts";
 import * as ServerSettings from "../serverSettings.ts";
@@ -233,7 +234,8 @@ export const make = Effect.gen(function* () {
     const settings = yield* settingsService.getSettings.pipe(
       Effect.catchCause(() => Effect.succeed(null)),
     );
-    if (settings !== null && !settings.enableProviderUpdateChecks) return manifest;
+    // t3code-disconnected: unreadable settings fall back to the fork's default, not to fetching.
+    if (!(settings?.enableProviderUpdateChecks ?? PROVIDER_UPDATE_CHECKS_DEFAULT)) return manifest;
 
     lastAttemptMs = now;
     const fetched = yield* httpClient.get(MODEL_MANIFEST_URL).pipe(

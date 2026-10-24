@@ -14,10 +14,19 @@ import * as HttpServer from "effect/http/HttpServer";
 import * as HttpServerRequest from "effect/http/HttpServerRequest";
 import * as HttpServerResponse from "effect/http/HttpServerResponse";
 import * as HostProcess from "@t3tools/shared/HostProcess";
+import { vi } from "vite-plus/test";
 
 import * as ServerConfig from "../config.ts";
 import { getTelemetryIdentity } from "./Identify.ts";
 import * as AnalyticsService from "./AnalyticsService.ts";
+
+// t3code-disconnected: most tests here cover upstream's delivery, so they turn analytics on.
+const disconnectedGate = vi.hoisted(() => ({ analyticsEnabled: true }));
+vi.mock("@t3tools/shared/disconnected", () => ({
+  get ANALYTICS_ENABLED() {
+    return disconnectedGate.analyticsEnabled;
+  },
+}));
 
 interface RecordedBatchRequest {
   readonly path: string;
@@ -145,6 +154,16 @@ const sendForTenMinutes = (
   });
 
 it.layer(NodeServices.layer)("AnalyticsService test", (it) => {
+  it.effect("t3code-disconnected: sends nothing even when T3CODE_TELEMETRY_ENABLED is set", () =>
+    Effect.gen(function* () {
+      disconnectedGate.analyticsEnabled = false;
+      const batches = yield* sendForTenMinutes(respondWithStatus(204)).pipe(
+        Effect.ensuring(Effect.sync(() => (disconnectedGate.analyticsEnabled = true))),
+      );
+      assert.deepStrictEqual(batches, []);
+    }),
+  );
+
   it.effect("client owner reports cannot use up the server's owner cap", () =>
     Effect.gen(function* () {
       const batches = yield* sendForTenMinutes(
