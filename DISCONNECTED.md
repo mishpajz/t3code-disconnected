@@ -30,7 +30,7 @@ master `DISCONNECTED` constant, in contracts so settings defaults can follow it
 (`PROVIDER_UPDATE_CHECKS_DEFAULT`).
 [`packages/shared/src/disconnected.ts`](./packages/shared/src/disconnected.ts) holds the
 per-feature gates derived from it (`T3_CONNECT_ENABLED`, `TAILSCALE_ENABLED`,
-`ANALYTICS_ENABLED`, `DESKTOP_AUTO_UPDATE_ENABLED` and those listed under
+`ANALYTICS_ENABLED`, `DESKTOP_AUTO_UPDATE_ENABLED`, `BITBUCKET_ENABLED` and those listed under
 [Patched to stay local](#patched-to-stay-local)). Each gate is ANDed into upstream's own
 switch for the feature, so no build value, environment variable, setting or stored secret can
 turn it back on. Defaults only change what a fresh install starts with; users can still opt
@@ -43,7 +43,8 @@ enabled behaviour are skipped or force the gate on.
   on) talk to their own services. This fork does not change that; use the ones you are
   allowed to use.
 - **Git hosting and source-control integrations.** These talk to the hosts you configure
-  (for example Azure DevOps through `az`). They stay.
+  (for example Azure DevOps through `az`). They stay, except Bitbucket, which contacts
+  `api.bitbucket.org` on its own and is not needed here.
 - **The built-in browser.** It can still download Chrome on first use and browse wherever
   you or an agent navigate.
 - **Hosted web app and mobile app.** See [Scope](#scope). The mobile app also depends on
@@ -63,6 +64,10 @@ enabled behaviour are skipped or force the gate on.
       command when network access or Tailscale Serve is on (`packages/tailscale`,
       `apps/desktop/src/backend/tailscaleEndpointProvider.ts`,
       `apps/server/src/environment/DirectEndpoints.ts`).
+- [x] **Bitbucket integration.** It checks sign-in against `api.bitbucket.org` whenever source
+      control settings load, even with no token configured. Its server driver is left out, so
+      Bitbucket is not listed and Bitbucket remotes read as unsupported
+      (`apps/server/src/sourceControl/sourceControlDefinitions.ts`).
 
 ### Turned off by default
 
