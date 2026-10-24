@@ -28,8 +28,6 @@ removed or turned off.
 
 ## Changes
 
-Status: **planned**. Items are ticked as they land.
-
 ### Removed from the build
 
 - [ ] **T3 Connect.** The cloud relay, account linking, managed endpoints, agent-activity
