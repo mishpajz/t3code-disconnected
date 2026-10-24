@@ -45,6 +45,12 @@ export const PROVIDER_PRESENTATION = {
     color: "#0866ff",
     driverKind: ProviderDriverKind.make("muse"),
   },
+  // t3code-disconnected: Usage history for ACP agents (DISCONNECTED.md).
+  acp: {
+    label: "ACP agents",
+    color: "#c2853d",
+    driverKind: ProviderDriverKind.make("acpRegistry"),
+  },
 } satisfies Record<UsageProviderKind, UsageProviderPresentation>;
 
 export const PROVIDER_ORDER = Object.keys(PROVIDER_PRESENTATION) as UsageProviderKind[];

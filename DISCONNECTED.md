@@ -124,6 +124,17 @@ enabled behaviour are skipped or force the gate on.
       starts tool work, and permission requests are rejected. Review guides need read-only
       investigation, which a generic ACP agent cannot guarantee, so they still need another
       provider (`packages/provider-acp-registry/src/server/textGeneration.ts`).
+- [x] **Usage history for ACP agents.** ACP Registry instances record the token usage the
+      agent returns with each prompt turn and text generation to `acp-usage/<day>.jsonl` in the state directory, and
+      the Usage page reads it back as **ACP agents**. Agents that wrap Claude, Codex, Pi or
+      OpenCode are skipped, since Usage already reads their own history
+      (`packages/provider-acp-registry/src/server/usage.ts`, `onPromptUsage` in
+      `packages/provider-acp/src/server/adapter.ts`).
+- [x] **T3 tools over HTTP for ACP agents.** ACP agents that advertise HTTP MCP support get
+      T3's MCP endpoint directly instead of the `t3 acp-mcp-bridge` stdio server, because
+      Copilot rejects stdio servers. codex-acp and pi-acp advertise HTTP but drop the server,
+      so they only reach the T3 tools through the `t3 acp-mcp-call` terminal fallback
+      (`acpMcpContext` in `packages/provider-acp/src/server/adapter.ts`).
 - [x] **Egress check.** Runs the server and web UI with no route to the internet and
       records every DNS lookup and connection attempt ([`egress-check/`](./egress-check/README.md)).
       Runs before every Windows installer build.

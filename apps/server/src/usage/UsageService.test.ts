@@ -51,6 +51,7 @@ import * as UsageService from "./UsageService.ts";
 import * as Disconnected from "@t3tools/shared/disconnected";
 import * as MuseSdk from "../../../../packages/provider-muse/src/server/sdk.ts";
 import { MuseUsageHome } from "@t3tools/provider-muse/server";
+import { layerAcpUsageDirectory } from "@t3tools/provider-acp-registry/server";
 import { encodeScanCache, SCAN_CACHE_FILE_NAME } from "./usageScanCache.ts";
 
 vi.mock("node:fs/promises", { spy: true });
@@ -156,6 +157,7 @@ const layerService = (input: {
   ).pipe(
     Layer.provideMerge(AntigravityUsage.layer),
     Layer.provideMerge(MuseUsageHome.layer),
+    Layer.provideMerge(layerAcpUsageDirectory),
     Layer.provideMerge(ProviderHostLive.layer),
     Layer.provideMerge(CodexUsageHistory.layer.pipe(Layer.provideMerge(Sqlite.layerMemory))),
     Layer.provideMerge(Layer.mock(BackgroundPolicy.BackgroundPolicy)({})),
@@ -1128,6 +1130,40 @@ describe("UsageService", () => {
         Effect.scoped,
         Effect.provide(layerService({ prefix: "usage-pi-malformed", home, settings })),
       );
+    }).pipe(Effect.scoped),
+  );
+
+  it.live("reads the usage T3 records for ACP agents from its state directory", () =>
+    Effect.gen(function* () {
+      const { home, settings } = yield* setup;
+      yield* Effect.gen(function* () {
+        const config = yield* ServerConfig.ServerConfig;
+        const dir = NodePath.join(config.stateDir, "acp-usage");
+        yield* Effect.promise(async () => {
+          await NodeFSP.mkdir(dir, { recursive: true });
+          await NodeFSP.writeFile(
+            NodePath.join(dir, "2026-08-01.jsonl"),
+            encodeUnknownJsonString({
+              type: "acp_usage",
+              timestamp: "2026-08-01T10:00:00Z",
+              sessionId: "agent-session",
+              agent: "Copilot",
+              model: "custom-model",
+              usage: { inputTokens: 100, outputTokens: 20, cachedReadTokens: 60 },
+            }) + "\n",
+          );
+        });
+        const service = yield* UsageService.make;
+        const summary = yield* service.readSummary(WINDOW);
+        const acp = summary.buckets.filter((bucket) => bucket.provider === "acp");
+        assert.strictEqual(acp.length, 1);
+        assert.strictEqual(acp[0]?.model, "Copilot/custom-model");
+        assert.deepInclude(acp[0]?.totals, {
+          uncachedInputTokens: 40,
+          cachedInputTokens: 60,
+          outputTokens: 20,
+        });
+      }).pipe(Effect.scoped, Effect.provide(layerService({ prefix: "usage-acp", home, settings })));
     }).pipe(Effect.scoped),
   );
 

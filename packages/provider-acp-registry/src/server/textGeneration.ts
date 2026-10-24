@@ -20,6 +20,7 @@ import * as TextGenerationOperations from "@t3tools/provider-core/server/textGen
 import type { AcpRegistrySettings } from "../settings.ts";
 import * as AcpRegistrySupport from "./AcpRegistrySupport.ts";
 import { acpRegistryProbeFailure } from "./probe.ts";
+import type { AcpUsageRecorder } from "./usage.ts";
 
 const DEFAULT_TIMEOUT_MS = 180_000;
 const MAX_OUTPUT_CHARS = 128_000;
@@ -30,6 +31,8 @@ export interface AcpRegistryTextGenerationOptions {
   readonly settings: AcpRegistrySettings;
   readonly environment: NodeJS.ProcessEnv;
   readonly timeoutMs?: number;
+  // t3code-disconnected: Usage history for ACP agents (DISCONNECTED.md).
+  readonly recordUsage?: AcpUsageRecorder | undefined;
 }
 
 type TextRuntime = AcpSessionRuntime.AcpSessionRuntime["Service"];
@@ -255,6 +258,10 @@ export const makeAcpRegistryTextGeneration = Effect.fn("makeAcpRegistryTextGener
               failure(`${PROVIDER_LABEL} failed while generating text.`, cause),
             ),
           );
+        // The agent spent these tokens even if the output is rejected below.
+        if (options.recordUsage !== undefined && result.usage != null) {
+          yield* options.recordUsage({ sessionId: started.sessionId, model, usage: result.usage });
+        }
         if (yield* Deferred.isDone(rejected)) {
           return yield* Deferred.await(rejected);
         }

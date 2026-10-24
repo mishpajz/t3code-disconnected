@@ -15,6 +15,7 @@ import * as Schema from "effect/Schema";
 import { AcpRegistrySettings } from "../settings.ts";
 import * as AcpRegistrySupport from "./AcpRegistrySupport.ts";
 import { makeAcpRegistryTextGeneration } from "./textGeneration.ts";
+import type { AcpUsageRecorder } from "./usage.ts";
 
 const fixturePath = NodePath.join(
   NodePath.dirname(NodeURL.fileURLToPath(import.meta.url)),
@@ -36,6 +37,7 @@ const generate = Effect.fn("generate")(function* (
     readonly timeoutMs?: number;
     readonly command?: string;
     readonly resolve?: Effect.Effect<never, AcpRegistrySupport.AcpRegistryError>;
+    readonly recordUsage?: AcpUsageRecorder;
   } = {},
 ) {
   const fs = yield* FileSystem.FileSystem;
@@ -64,6 +66,7 @@ const generate = Effect.fn("generate")(function* (
     settings: decodeSettings({ source: "local", commandPath: "text-agent" }),
     environment: process.env,
     ...(options.timeoutMs === undefined ? {} : { timeoutMs: options.timeoutMs }),
+    recordUsage: options.recordUsage,
   }).pipe(Effect.provideService(AcpRegistrySupport.AcpRegistryCatalog, catalog));
   const run =
     options.run ??
@@ -100,6 +103,23 @@ describe("ACP Registry text generation", () => {
       const { result, log } = yield* generate("reply");
       expect(result).toEqual(Exit.succeed({ title: "Title from small" }));
       expect(log).toEqual(["model:small", "prompt", "exit"]);
+    }).pipe(Effect.scoped, Effect.provide(NodeServices.layer)),
+  );
+
+  it.live("records the usage the agent reports for a generation", () =>
+    Effect.gen(function* () {
+      const recorded: Array<unknown> = [];
+      const { result } = yield* generate("reply", {
+        recordUsage: (input) => Effect.sync(() => void recorded.push(input)),
+      });
+      expect(Exit.isSuccess(result)).toBe(true);
+      expect(recorded).toEqual([
+        {
+          sessionId: "text-session-1",
+          model: "small",
+          usage: { totalTokens: 30, inputTokens: 20, outputTokens: 10 },
+        },
+      ]);
     }).pipe(Effect.scoped, Effect.provide(NodeServices.layer)),
   );
 

@@ -16,6 +16,8 @@ export const UsageProviderKind = Schema.Literals([
   "antigravity",
   "pi",
   "muse",
+  // t3code-disconnected: Usage history for ACP agents (DISCONNECTED.md).
+  "acp",
 ]);
 export type UsageProviderKind = typeof UsageProviderKind.Type;
 

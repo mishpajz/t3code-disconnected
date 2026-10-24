@@ -171,6 +171,7 @@ import * as ProcessGroupMetrics from "./resourceTelemetry/ProcessGroupMetrics.ts
 import * as ResourceTelemetry from "./resourceTelemetry/ResourceTelemetry.ts";
 import * as AntigravityUsage from "./provider/Drivers/AntigravityUsage.ts";
 import { MuseUsageHome } from "@t3tools/provider-muse/server";
+import { layerAcpUsageDirectory } from "@t3tools/provider-acp-registry/server";
 import * as CursorAccountReader from "@t3tools/provider-cursor/server/CursorAccountReader";
 import * as CursorKeychain from "@t3tools/provider-cursor/server/CursorKeychain";
 import * as CursorUsageAccounts from "@t3tools/provider-cursor/server/CursorUsageAccounts";
@@ -269,6 +270,8 @@ const layerUsage = UsageService.layer.pipe(
     Layer.mergeAll(
       AntigravityUsage.layer,
       MuseUsageHome.layer,
+      // t3code-disconnected: Usage history for ACP agents (DISCONNECTED.md).
+      layerAcpUsageDirectory,
       CodexUsageHistory.layer,
       CursorUsageAccounts.layer.pipe(
         Layer.provide(CursorAccountReader.layer.pipe(Layer.provide(CursorKeychain.layer))),

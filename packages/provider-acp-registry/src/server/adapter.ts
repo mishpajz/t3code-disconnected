@@ -9,6 +9,7 @@ import {
   extractDevinSubagentUpdate,
 } from "./devinAcp.ts";
 import { extractDroidElicitationForm } from "./droidAcp.ts";
+import { makeAcpUsageRecorder } from "./usage.ts";
 import {
   copilotClientCapabilitiesMeta,
   extractCopilotSubagentUpdate,
@@ -80,6 +81,7 @@ export interface AcpRegistryAdapterV2Options {
     ChildProcessSpawner.ChildProcessSpawner | Crypto.Crypto | Scope.Scope
   >;
   readonly continuationRequests?: Parameters<typeof makeAcpAdapterV2>[0]["continuationRequests"];
+  readonly recordPromptUsage?: AcpAdapterV2Flavor["onPromptUsage"];
   readonly assertComplete?: Effect.Effect<void, EffectAcpErrors.AcpError>;
 }
 
@@ -249,6 +251,9 @@ export const makeAcpRegistryAdapterV2 = Effect.fn("makeAcpRegistryAdapterV2")(fu
           extractSubagentUpdate: extractCopilotSubagentUpdate,
         }),
     makeRuntime: options.makeRuntime ?? makeAcpRegistryRuntime(runtimeOptions, catalog),
+    ...(options.recordPromptUsage === undefined
+      ? {}
+      : { onPromptUsage: options.recordPromptUsage }),
     ...(runtimeCoordinator === undefined
       ? {}
       : {
@@ -322,9 +327,13 @@ export const AcpRegistryAdapterV2Driver: ProviderAdapterDriver<
       const selfInvocation = yield* resolveSelfInvocation();
       const providerEventLoggers = yield* ProviderEventLoggers.ProviderEventLoggers;
       const makeNativeLogger = yield* makeAcpNativeLoggerFactory();
+      const settings = { ...input.config, enabled: input.enabled };
+      // t3code-disconnected: Usage history for ACP agents (DISCONNECTED.md).
+      const recordPromptUsage = yield* makeAcpUsageRecorder(input.displayName, settings);
       return yield* makeAcpRegistryAdapterV2({
         instanceId: input.instanceId,
-        settings: { ...input.config, enabled: input.enabled },
+        settings,
+        ...(recordPromptUsage === undefined ? {} : { recordPromptUsage }),
         environment: yield* mergeProviderInstanceEnvironment(input.environment, hostEnvironment),
         selfInvocation,
         continuationRequests: yield* ProviderContinuationRequests.ProviderContinuationRequests,

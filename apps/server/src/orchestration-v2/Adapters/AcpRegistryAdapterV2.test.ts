@@ -466,6 +466,9 @@ describe("AcpRegistryAdapterV2", () => {
       readonly storedModel?: string;
       readonly storedModePick?: string;
       readonly turnModels?: ReadonlyArray<string>;
+      readonly recordPromptUsage?: Parameters<
+        typeof makeAcpRegistryAdapterV2
+      >[0]["recordPromptUsage"];
     }) {
       const spawner = yield* ChildProcessSpawner.ChildProcessSpawner;
       // Scope release gives the replay agent at most a second to exit, so the status
@@ -517,6 +520,9 @@ describe("AcpRegistryAdapterV2", () => {
           customModels: input.customModels ?? [],
         }),
         environment: {},
+        ...(input.recordPromptUsage === undefined
+          ? {}
+          : { recordPromptUsage: input.recordPromptUsage }),
         makeRuntime: makeAcpReplayRuntime({
           customModels: input.customModels,
           transcript,
@@ -768,6 +774,39 @@ describe("AcpRegistryAdapterV2", () => {
             ],
           );
         }).pipe(Effect.provide(layerTest), Effect.scoped),
+    );
+
+    it.effect("hands the usage a prompt response reports to the usage recorder", () =>
+      Effect.gen(function* () {
+        const recorded: Array<unknown> = [];
+        const usage = {
+          totalTokens: 1_250,
+          inputTokens: 1_000,
+          outputTokens: 250,
+          cachedReadTokens: 600,
+        };
+        yield* openWithStoredPicks({
+          setup: {
+            models: {
+              currentModelId: "hermes",
+              availableModels: ["hermes", "default"].map((modelId) => ({
+                modelId,
+                name: modelId,
+              })),
+            },
+          },
+          storedModel: "default",
+          turnModels: ["hermes"],
+          recordPromptUsage: (input) => Effect.sync(() => void recorded.push(input)),
+          pickFrames: [
+            ...setModel("default"),
+            ...setModel("hermes"),
+            outbound("session/prompt"),
+            answer("session/prompt", { stopReason: "end_turn", usage }),
+          ],
+        });
+        assert.deepEqual(recorded, [{ sessionId: "agent-session", model: "hermes", usage }]);
+      }).pipe(Effect.provide(layerTest), Effect.scoped),
     );
 
     // regression: #19519 models come from session model state, not a hardcoded list

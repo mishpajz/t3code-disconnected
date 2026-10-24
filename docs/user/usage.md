@@ -39,6 +39,11 @@ variable to the same directory. Pi includes recorded tool and summary costs unde
 Muse Code reads native session history, including child sessions, from the home reported by the
 configured Muse CLI. Its environment settings, including `XDG_DATA_HOME`, apply. Models without
 known prices still contribute tokens and appear as unpriced; set custom prices to estimate their cost.
+ACP agents keep no history T3 can read, so T3 records the token use an ACP Registry agent reports
+at the end of each turn or text generation, under **ACP agents**. Only turns run in T3 after this was added count, and
+only for agents that report usage, such as GitHub Copilot CLI 1.0.78 or later. Costs are estimated
+from the model name. Claude, Codex, Pi, and OpenCode agents are left out, since Usage reads their own
+history.
 Use absolute paths or `~/` paths in the account's environment settings; relative environment paths
 depend on each project's working directory and cannot be reliably discovered by Usage. Accounts
 sharing a history directory count once.

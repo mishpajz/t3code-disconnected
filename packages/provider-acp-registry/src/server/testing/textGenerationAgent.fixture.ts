@@ -50,7 +50,12 @@ const program = Effect.gen(function* () {
   const finish = agent.client
     .sessionUpdate({
       sessionId,
-      update: { sessionUpdate: "state_update", state: "idle", stopReason: "end_turn" },
+      update: {
+        sessionUpdate: "state_update",
+        state: "idle",
+        stopReason: "end_turn",
+        usage: { totalTokens: 30, inputTokens: 20, outputTokens: 10 },
+      },
     })
     .pipe(Effect.as({}));
 

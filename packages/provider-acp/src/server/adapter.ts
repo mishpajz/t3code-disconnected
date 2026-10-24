@@ -140,6 +140,7 @@ export interface AcpAdapterV2RuntimeInput {
   readonly runtimePolicy: ProviderAdapter.ProviderAdapterV2RuntimePolicy;
   readonly mcpServers: ReadonlyArray<EffectAcpSchema.McpServer>;
   readonly acpMcpServers?: ReadonlyArray<EffectAcpSchema.McpServer>;
+  readonly httpMcpServers?: ReadonlyArray<EffectAcpSchema.McpServer>;
   readonly processEnvironment?: NodeJS.ProcessEnv;
   readonly resumeSessionId?: string;
   readonly interruptPromptOnCancel?: boolean;
@@ -313,6 +314,12 @@ export interface AcpAdapterV2Flavor {
   readonly onSessionEvent?: (
     event: AcpSessionRuntime.AcpSessionRuntimeEvent,
   ) => Effect.Effect<void>;
+  /** Receives the token usage an agent reports when a prompt turn returns. */
+  readonly onPromptUsage?: (input: {
+    readonly sessionId: string;
+    readonly model: string;
+    readonly usage: EffectAcpSchema.Usage;
+  }) => Effect.Effect<void>;
   readonly subagentsIdleOnTurnCompletion?: boolean;
   readonly supportsCompaction?: boolean;
   readonly runtimeHarness?: string;
@@ -598,6 +605,7 @@ function negotiatedCapabilities(
 interface AcpMcpContext {
   readonly servers: ReadonlyArray<EffectAcpSchema.McpServer>;
   readonly acpServers: ReadonlyArray<EffectAcpSchema.McpServer>;
+  readonly httpServers: ReadonlyArray<EffectAcpSchema.McpServer>;
   readonly processEnvironment?: NodeJS.ProcessEnv;
   readonly endpoint?: string;
   readonly authorization?: string;
@@ -608,9 +616,12 @@ function acpMcpContext(
   self: SelfInvocation,
 ): AcpMcpContext {
   if (session === undefined) {
-    return { servers: [], acpServers: [] };
+    return { servers: [], acpServers: [], httpServers: [] };
   }
-  // codex-acp 1.2.0 and pi-acp drop injected HTTP servers; bridge through stdio instead.
+  // Agents that advertise http get T3's MCP endpoint directly, since some (Copilot)
+  // reject stdio servers outright. codex-acp 1.2.0 and pi-acp advertise http but
+  // drop the server; that is accepted. The rest get the `t3 acp-mcp-bridge` stdio
+  // server, which forwards JSON-RPC to the same authenticated endpoint.
   return {
     servers: [
       {
@@ -625,6 +636,14 @@ function acpMcpContext(
       },
     ],
     acpServers: [{ type: "acp", name: "t3-code", serverId: "t3-code" }],
+    httpServers: [
+      {
+        type: "http",
+        name: "t3-code",
+        url: session.endpoint,
+        headers: [{ name: "Authorization", value: session.authorizationHeader }],
+      },
+    ],
     endpoint: session.endpoint,
     authorization: session.authorizationHeader,
     processEnvironment: {
@@ -637,7 +656,11 @@ function acpMcpContext(
 }
 
 function acpMcpActivation(context: AcpMcpContext) {
-  return { mcpServers: context.servers, acpMcpServers: context.acpServers };
+  return {
+    mcpServers: context.servers,
+    acpMcpServers: context.acpServers,
+    httpMcpServers: context.httpServers,
+  };
 }
 
 function nativeThreadId(
@@ -1977,6 +2000,7 @@ export const makeAcpAdapterV2 = Effect.fn("makeAcpAdapterV2")(function* (
             runtimePolicy: input.runtimePolicy,
             mcpServers: mcpContext.servers,
             acpMcpServers: mcpContext.acpServers,
+            httpMcpServers: mcpContext.httpServers,
             ...(mcpContext.processEnvironment === undefined
               ? {}
               : { processEnvironment: mcpContext.processEnvironment }),
@@ -7529,6 +7553,15 @@ export const makeAcpAdapterV2 = Effect.fn("makeAcpAdapterV2")(function* (
               // the completion fiber has not yet set promptSettled under the permit.
               Effect.tap(() =>
                 Deferred.succeed(context.promptWireSettled, undefined).pipe(Effect.asVoid),
+              ),
+              Effect.tap((result) =>
+                flavor.onPromptUsage === undefined || result.usage == null
+                  ? Effect.void
+                  : flavor.onPromptUsage({
+                      sessionId: requestedSessionId,
+                      model: context.input.modelSelection.model,
+                      usage: result.usage,
+                    }),
               ),
               Effect.flatMap((result) =>
                 runRuntimeCallbackAtGeneration(

@@ -495,6 +495,47 @@ describe("AcpSessionRuntime", () => {
     );
   });
 
+  it.effect("sends the HTTP MCP server instead of stdio when the agent advertises http", () => {
+    const requestEvents: Array<AcpSessionRuntime.AcpSessionRequestLogEvent> = [];
+    const httpServer = {
+      type: "http" as const,
+      name: "t3-code",
+      url: "http://127.0.0.1:1/mcp",
+      headers: [{ name: "Authorization", value: "Bearer test" }],
+    };
+    return Effect.gen(function* () {
+      const runtime = yield* AcpSessionRuntime.AcpSessionRuntime;
+      yield* runtime.start();
+
+      const created = requestEvents.find(
+        (event) => event.method === "session/new" && event.status === "started",
+      );
+      expect(created?.payload).toMatchObject({ mcpServers: [httpServer] });
+    }).pipe(
+      Effect.provide(
+        AcpSessionRuntime.layer({
+          spawn: {
+            command: mockAgentCommand,
+            args: mockAgentArgs,
+            env: { T3_ACP_MCP_HTTP: "1" },
+          },
+          cwd: process.cwd(),
+          clientInfo: { name: "t3-test", version: "0.0.0" },
+          authMethodId: "test",
+          mcpServers: [{ type: "stdio", name: "t3-code", command: "/usr/bin/node", args: [] }],
+          acpMcpServers: [{ type: "acp", name: "t3-code", serverId: "t3-code" }],
+          httpMcpServers: [httpServer],
+          requestLogger: (event) =>
+            Effect.sync(() => {
+              requestEvents.push(event);
+            }),
+        }),
+      ),
+      Effect.scoped,
+      Effect.provide(NodeServices.layer),
+    );
+  });
+
   it.effect("supports v2 session deletion and secret-safe provider management", () => {
     const requestEvents: Array<AcpSessionRuntime.AcpSessionRequestLogEvent> = [];
     return Effect.gen(function* () {
