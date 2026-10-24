@@ -172,6 +172,9 @@ Then use **Settings → Environments → Add environment** with `http://127.0.0.
 pairing code. Repeat for each worker, and turn on **Load balancing** to spread new threads
 across them.
 
+[`dev-tunnels/`](./dev-tunnels/README.md) has PowerShell scripts that run the worker's server
+and tunnel, and the control machine's tunnel connections, in the background.
+
 ## Staying in sync with upstream
 
 ```bash
