@@ -12,6 +12,7 @@ import { extractDroidElicitationForm } from "./droidAcp.ts";
 import {
   copilotClientCapabilitiesMeta,
   extractCopilotSubagentUpdate,
+  isCopilotLocalCommand,
   makeCopilotSubagentRouting,
 } from "./copilotAcp.ts";
 import { defaultInstanceIdForDriver, ProviderDriverKind } from "@t3tools/contracts";
@@ -186,11 +187,12 @@ export const makeAcpRegistryAdapterV2 = Effect.fn("makeAcpRegistryAdapterV2")(fu
   const startupKey =
     options.settings.source === "local" ? `local:${options.instanceId}` : registryAgentId;
   const isDevin = registryAgentId === "devin";
-  // Local installs launch the `copilot` binary directly with no registry id.
+  // Local installs launch the `copilot` binary with no registry id.
+  // t3code-disconnected: also match wrappers around it (DISCONNECTED.md).
   const isCopilot =
     registryAgentId === "github-copilot-cli" ||
     (options.settings.source === "local" &&
-      /^copilot(\.exe|\.cmd)?$/i.test(options.settings.commandPath.split(/[\\/]/).pop() ?? ""));
+      isCopilotLocalCommand(options.settings.commandPath, options.settings.commandArgs));
   const isClaude =
     registryAgentId === "claude-acp" ||
     (options.settings.source === "local" &&
