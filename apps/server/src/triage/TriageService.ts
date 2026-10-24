@@ -4,6 +4,7 @@ import {
   type ServerPrepareTriageInput,
   type ServerPrepareTriageResult,
 } from "@t3tools/contracts";
+import { TRIAGE_UPSTREAM_FETCH_ENABLED } from "@t3tools/shared/disconnected";
 import * as Context from "effect/Context";
 import * as Effect from "effect/Effect";
 import * as FileSystem from "effect/FileSystem";
@@ -145,6 +146,14 @@ const make = Effect.gen(function* () {
   // the agent finds and reuses this clone instead of making another. The folder
   // appears only once the clone is complete.
   const startSourceClone = Effect.fn("TriageService.startSourceClone")(function* () {
+    // t3code-disconnected: no clone before the user agrees to one (DISCONNECTED.md).
+    if (!TRIAGE_UPSTREAM_FETCH_ENABLED) {
+      return {
+        _tag: "failed",
+        serverVersion,
+        reason: "this build does not download T3 Code's source on its own.",
+      } satisfies TriageSourceClone;
+    }
     yield* fs.makeDirectory(sourceDir, { recursive: true });
     const source = yield* resolveSource();
     if (source === undefined) {

@@ -9,6 +9,7 @@ import {
   buildTriageLaunchPrompt,
   type TriageContextInput,
   TRIAGE_PLAYBOOK,
+  withoutPlaybookUpdateCheck,
 } from "./triagePrompt.ts";
 
 it("stays byte-identical to .github/triage/PLAYBOOK.md", () => {
@@ -18,6 +19,15 @@ it("stays byte-identical to .github/triage/PLAYBOOK.md", () => {
     "../../../../.github/triage/PLAYBOOK.md",
   );
   assert.equal(TRIAGE_PLAYBOOK, NodeFS.readFileSync(canonicalPath, "utf8"));
+});
+
+// t3code-disconnected: disconnected builds drop the step that fetches a newer playbook.
+it("drops only the newer-playbook check", () => {
+  const playbook = withoutPlaybookUpdateCheck(TRIAGE_PLAYBOOK);
+  assert.notInclude(playbook, "raw.githubusercontent.com");
+  assert.notInclude(playbook, "## 3. Check for a newer playbook");
+  assert.include(playbook, "## 2. Read the machine facts");
+  assert.include(playbook, "## 4. Get the source");
 });
 
 it("launch prompt stays a single argv-safe line naming the prompt file", () => {

@@ -4,14 +4,27 @@ import * as Effect from "effect/Effect";
 import * as Result from "effect/Result";
 
 import {
+  hasCloudPublicConfig,
   hostedAppUrlConfig,
   makeCloudCliOAuthConfig,
   makeRelayUrlConfig,
+  relayUrlConfig,
   resolveRelayClientTracingConfig,
 } from "./publicConfig.ts";
 
 const provideEnv = (env: Readonly<Record<string, string>>) =>
   Effect.provide(ConfigProvider.layer(ConfigProvider.fromEnv({ env })));
+
+it.effect("t3code-disconnected: runtime T3 Connect config cannot enable it", () =>
+  Effect.gen(function* () {
+    assert.isFalse(hasCloudPublicConfig);
+    const result = yield* relayUrlConfig.pipe(
+      provideEnv({ T3CODE_RELAY_URL: "https://relay.example.test" }),
+      Effect.result,
+    );
+    assert.isTrue(Result.isFailure(result));
+  }),
+);
 
 it.effect("rejects an insecure runtime relay URL override", () =>
   makeRelayUrlConfig("https://embedded.example.test").pipe(

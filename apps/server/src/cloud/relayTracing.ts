@@ -1,3 +1,4 @@
+import { T3_CONNECT_ENABLED } from "@t3tools/shared/disconnected";
 import {
   nodeProcessRuntimeAttributes,
   processServiceInstanceId,
@@ -9,7 +10,8 @@ import * as Layer from "effect/Layer";
 import * as ServerConfig from "../config.ts";
 import { resolveRelayClientTracingConfig } from "./publicConfig.ts";
 
-const relayClientTracingConfig = resolveRelayClientTracingConfig();
+// t3code-disconnected: T3 Connect is disabled (DISCONNECTED.md), so relay traces are never exported.
+const relayClientTracingConfig = T3_CONNECT_ENABLED ? resolveRelayClientTracingConfig() : null;
 
 const relayLayer = (resource: Omit<RelayTracing.RelayClientTracingResource, "serviceInstanceId">) =>
   Layer.unwrap(

@@ -48,11 +48,19 @@ import * as AntigravityUsage from "../provider/Drivers/AntigravityUsage.ts";
 import * as ProviderHostLive from "../provider/ProviderHostLive.ts";
 import { totalTokens, type UsageRecord } from "@t3tools/provider-core/server/usage";
 import * as UsageService from "./UsageService.ts";
+import * as Disconnected from "@t3tools/shared/disconnected";
 import * as MuseSdk from "../../../../packages/provider-muse/src/server/sdk.ts";
 import { MuseUsageHome } from "@t3tools/provider-muse/server";
 import { makeScanCacheWriter, SCAN_CACHE_FILE_NAME } from "./usageScanCache.ts";
 
 vi.mock("node:fs/promises", { spy: true });
+// t3code-disconnected: retain upstream pricing coverage; the disabled path is tested below.
+vi.mock("@t3tools/shared/disconnected", async (importOriginal) => ({
+  ...(await importOriginal<typeof Disconnected>()),
+  get REMOTE_PRICING_ENABLED() {
+    return true;
+  },
+}));
 vi.mock("../../../../packages/provider-muse/src/server/sdk.ts", async (importOriginal) => ({
   ...(await importOriginal<typeof MuseSdk>()),
   createMuseSdkHostEffect: vi.fn(() =>
@@ -465,6 +473,39 @@ describe("Codex usage history", () => {
 });
 
 describe("UsageService", () => {
+  it.live(
+    "t3code-disconnected: prices usage with bundled rates without fetching, including refresh",
+    () =>
+      Effect.gen(function* () {
+        using _gate = vi
+          .spyOn(Disconnected, "REMOTE_PRICING_ENABLED", "get")
+          .mockReturnValue(false);
+        const { transcript, settings, home } = yield* setup;
+        yield* Effect.promise(() =>
+          NodeFSP.writeFile(transcript, claudeLine(1, 5, "claude-sonnet-4-6")),
+        );
+        const requests: string[] = [];
+        const service = yield* UsageService.make.pipe(
+          Effect.provide(
+            layerService({
+              prefix: "usage-service-disconnected-test",
+              home,
+              settings,
+              onRatesFetch: (request) => requests.push(request.url),
+            }),
+          ),
+        );
+
+        const summary = yield* service.readSummary(WINDOW);
+        assert.strictEqual(summary.pricing.status, "cached");
+        assert.strictEqual(summary.pricing.source, "Bundled rates");
+        assert.isAbove(summary.pricing.knownModels, 0);
+        assert.closeTo(summary.buckets[0]?.costUsd ?? -1, 0.000105, 1e-12);
+        assert.deepStrictEqual(yield* service.refreshRates, summary.pricing);
+        assert.deepStrictEqual(requests, []);
+      }).pipe(Effect.scoped),
+  );
+
   it.live(
     "repairs initial Codex prices after unchanged-file retries, persists evidence and corrections, and honors later native tiers",
     () =>

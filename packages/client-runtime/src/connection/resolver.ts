@@ -2,6 +2,7 @@ import type {
   AuthClientPresentationMetadata,
   ExecutionEnvironmentDescriptor,
 } from "@t3tools/contracts";
+import { T3_CONNECT_ENABLED } from "@t3tools/shared/disconnected";
 import { withRelayClientTracing } from "@t3tools/shared/relayTracing";
 import * as Context from "effect/Context";
 import * as Effect from "effect/Effect";
@@ -122,6 +123,14 @@ const makePrimaryBroker = Effect.fn("clientRuntime.connection.broker.makePrimary
   });
 });
 
+// t3code-disconnected: blocked, not transient, so saved T3 Connect environments stop retrying
+// instead of waiting for a sign-in that can never happen.
+const t3ConnectDisabledError = () =>
+  new ConnectionBlockedError({
+    reason: "unsupported",
+    detail: "T3 Connect is not available in this build. Pair the environment directly instead.",
+  });
+
 const makeBearerBroker = Effect.fn("clientRuntime.connection.broker.makeBearer")(function* () {
   const credentials = yield* ConnectionCredentialStore.ConnectionCredentialStore;
   const remote = yield* RemoteEnvironmentAuthorization.RemoteEnvironmentAuthorization;
@@ -146,6 +155,8 @@ const makeBearerBroker = Effect.fn("clientRuntime.connection.broker.makeBearer")
       });
     }
     if (profile.authorization === "t3-connect") {
+      // t3code-disconnected: T3 Connect is disabled (DISCONNECTED.md).
+      if (!T3_CONNECT_ENABLED) return yield* t3ConnectDisabledError();
       const authorized = yield* remote.authorizeDpop({
         expectedEnvironmentId: target.environmentId,
         directEndpoint: { httpBaseUrl: profile.httpBaseUrl, wsBaseUrl: profile.wsBaseUrl },
@@ -182,6 +193,8 @@ const makeRelayBroker = Effect.fn("clientRuntime.connection.broker.makeRelay")(f
 
   return Effect.fnUntraced(
     function* (target: RelayConnectionTarget) {
+      // t3code-disconnected: T3 Connect is disabled (DISCONNECTED.md).
+      if (!T3_CONNECT_ENABLED) return yield* t3ConnectDisabledError();
       const authorized = yield* remote.authorizeDpop({
         expectedEnvironmentId: target.environmentId,
       });

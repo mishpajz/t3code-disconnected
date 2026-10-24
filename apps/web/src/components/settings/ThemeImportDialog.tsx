@@ -1,4 +1,5 @@
 import { DownloadIcon, PlusIcon } from "lucide-react";
+import { THEME_MARKETPLACE_ENABLED } from "@t3tools/shared/disconnected";
 import type { ChangeEvent, DragEvent, UIEvent } from "react";
 import { settlePromise } from "@t3tools/client-runtime/state/runtime";
 import { useRef, useState } from "react";
@@ -423,21 +424,26 @@ function ThemeImportBody({
 
   return (
     <DialogPanel>
-      <ThemeSearchSection
-        onInstalled={(themes, context) => {
-          onImportedMany(themes, context);
-          onClose();
-        }}
-        signal={signal}
-      />
+      {/* t3code-disconnected: hide marketplace browsing while keeping local imports. */}
+      {THEME_MARKETPLACE_ENABLED ? (
+        <>
+          <ThemeSearchSection
+            onInstalled={(themes, context) => {
+              onImportedMany(themes, context);
+              onClose();
+            }}
+            signal={signal}
+          />
 
-      <div className="flex items-center gap-3" aria-hidden>
-        <div className="h-px flex-1 bg-border" />
-        <span className="text-muted-foreground text-2xs uppercase tracking-wider">
-          or import a file
-        </span>
-        <div className="h-px flex-1 bg-border" />
-      </div>
+          <div className="flex items-center gap-3" aria-hidden>
+            <div className="h-px flex-1 bg-border" />
+            <span className="text-muted-foreground text-2xs uppercase tracking-wider">
+              or import a file
+            </span>
+            <div className="h-px flex-1 bg-border" />
+          </div>
+        </>
+      ) : null}
 
       {(() => {
         const dropHandlers = {

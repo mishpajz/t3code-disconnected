@@ -5,6 +5,7 @@ import * as NodeOS from "node:os";
 import * as NodePath from "node:path";
 
 import * as NodeServices from "@effect/platform-node/NodeServices";
+import { TAILSCALE_ENABLED } from "@t3tools/shared/disconnected";
 import { AuthStandardClientScopes, ORCHESTRATION_PROTOCOL_VERSION } from "@t3tools/contracts";
 import * as NetService from "@t3tools/shared/Net";
 import * as HostProcess from "@t3tools/shared/HostProcess";
@@ -46,6 +47,10 @@ const baseState = {
   origin: "http://127.0.0.1:3773",
   startedAt: "2026-06-20T00:00:00.000Z",
 } as const satisfies PersistedServerRuntimeState;
+
+// t3code-disconnected: Tailscale is disabled (DISCONNECTED.md). These cover upstream
+// behaviour that only runs with Tailscale enabled.
+const itTailscale = it.effect.skipIf(!TAILSCALE_ENABLED);
 
 describe("pair tailscale local target", () => {
   it("proxies the dev web port for dev servers", () => {
@@ -123,7 +128,7 @@ const withDescriptorServer = <A, E, R>(
   );
 
 describe("t3 pair", () => {
-  it.effect("publishes an IPv6-only server through Tailscale Serve when pairing", () =>
+  itTailscale("publishes an IPv6-only server through Tailscale Serve when pairing", () =>
     withDescriptorServer(
       (origin) =>
         Effect.gen(function* () {
@@ -188,6 +193,32 @@ describe("t3 pair", () => {
           assert.include(output, "Pairing URL: https://pair-test.tail.ts.net/pair#token=");
         }),
       "::1",
+    ).pipe(Effect.provide(NodeServices.layer)),
+  );
+
+  // t3code-disconnected: Tailscale is disabled (DISCONNECTED.md).
+  it.effect("refuses --tailscale without running tailscale", () =>
+    withDescriptorServer((origin) =>
+      Effect.gen(function* () {
+        const baseDir = NodeFS.mkdtempSync(NodePath.join(NodeOS.tmpdir(), "t3-pair-ts-off-test-"));
+        yield* persistServerRuntimeState({
+          path: NodePath.join(baseDir, "userdata", "server-runtime.json"),
+          state: yield* makePersistedServerRuntimeState({
+            config: { host: "127.0.0.1", devUrl: undefined },
+            port: Number(new URL(origin).port),
+          }),
+        });
+        const error = yield* provideCliTestLayers(
+          runCli(["pair", "--base-dir", baseDir, "--tailscale"]).pipe(
+            Effect.provideService(
+              ChildProcessSpawner.ChildProcessSpawner,
+              ChildProcessSpawner.make(() => Effect.die("unexpected tailscale process")),
+            ),
+            Effect.flip,
+          ),
+        );
+        assert.include(String(error), "Tailscale support is disabled in this build.");
+      }),
     ).pipe(Effect.provide(NodeServices.layer)),
   );
 
@@ -368,7 +399,7 @@ describe("t3 pair", () => {
 
   // Without the capability `tailscale serve` blocks on an enablement URL, so
   // pairing must stop at status instead of spawning it.
-  it.effect("explains a tailnet without HTTPS serve instead of running tailscale serve", () =>
+  itTailscale("explains a tailnet without HTTPS serve instead of running tailscale serve", () =>
     withDescriptorServer((origin) =>
       Effect.gen(function* () {
         const baseDir = NodeFS.mkdtempSync(NodePath.join(NodeOS.tmpdir(), "t3-pair-ts-test-"));

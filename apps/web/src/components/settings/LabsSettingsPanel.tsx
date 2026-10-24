@@ -1,4 +1,5 @@
 import { useAuth } from "@clerk/react";
+import { T3_CONNECT_ENABLED } from "@t3tools/shared/disconnected";
 import { Link } from "@tanstack/react-router";
 
 import { hasCloudPublicConfig } from "~/cloud/publicConfig";
@@ -18,8 +19,15 @@ export function LabsSettingsPanel() {
       <SettingsSection id="beta" title="Beta">
         <BoringSidebarRow />
         <BoringSidebarMultilineRow />
-        {/* Clerk is only mounted when this build has T3 Connect. */}
-        {hasCloudPublicConfig() ? <GuestLinksRowWithSignIn /> : <GuestLinksRow />}
+        {/* t3code-disconnected: guest links run over T3 Connect, which is disabled (DISCONNECTED.md). */}
+        {T3_CONNECT_ENABLED ? (
+          /* Clerk is only mounted when this build has T3 Connect. */
+          hasCloudPublicConfig() ? (
+            <GuestLinksRowWithSignIn />
+          ) : (
+            <GuestLinksRow />
+          )
+        ) : null}
         <LinkedEnvironmentsRow />
         <SimlockHostsRow />
       </SettingsSection>

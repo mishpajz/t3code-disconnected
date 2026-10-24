@@ -1,4 +1,5 @@
 import { serializeComposerFileLink } from "@t3tools/shared/composerTrigger";
+import { TRIAGE_UPSTREAM_FETCH_ENABLED } from "@t3tools/shared/disconnected";
 
 /** Keep TRIAGE_PLAYBOOK byte-identical to .github/triage/PLAYBOOK.md after unescaping backticks and backslashes. */
 
@@ -184,7 +185,11 @@ ${
 
 ---
 
-${TRIAGE_PLAYBOOK}`;
+${TRIAGE_UPSTREAM_FETCH_ENABLED ? TRIAGE_PLAYBOOK : withoutPlaybookUpdateCheck(TRIAGE_PLAYBOOK)}`;
+
+// t3code-disconnected: the agent would fetch a newer playbook from GitHub unasked (DISCONNECTED.md).
+export const withoutPlaybookUpdateCheck = (playbook: string) =>
+  playbook.replace(/## 3\. Check for a newer playbook\n[\s\S]*?(?=## 4\. )/, "");
 
 /** A clone the server made before the session started, or why it could not. */
 export type TriageSourceClone =

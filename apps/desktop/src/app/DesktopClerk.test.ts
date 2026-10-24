@@ -28,6 +28,18 @@ vi.mock("@clerk/electron", () => ({
 vi.mock("@clerk/electron/storage", () => ({
   storage: storageMock,
 }));
+
+// t3code-disconnected: most tests here cover upstream's Clerk bridge, so they turn T3 Connect on
+// and keep upstream's profile folder.
+const disconnectedGate = vi.hoisted(() => ({ t3ConnectEnabled: true }));
+vi.mock("@t3tools/shared/disconnected", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("@t3tools/shared/disconnected")>()),
+  DESKTOP_OWN_APP_IDENTITY: false,
+  get T3_CONNECT_ENABLED() {
+    return disconnectedGate.t3ConnectEnabled;
+  },
+}));
+
 import * as Exit from "effect/Exit";
 import * as FileSystem from "effect/FileSystem";
 import * as ElectronApp from "../electron/ElectronApp.ts";
@@ -107,6 +119,26 @@ describe("DesktopClerk", () => {
     createClerkBridgeMock.mockReset();
     requestSingleInstanceLockMock.mockReset().mockReturnValue(true);
     storageMock.mockReset();
+    disconnectedGate.t3ConnectEnabled = true;
+  });
+
+  it("does not create the Clerk bridge while T3 Connect is disabled", () => {
+    disconnectedGate.t3ConnectEnabled = false;
+    const events: string[] = [];
+    // oxlint-disable-next-line t3code/no-manual-effect-runtime-in-tests -- Mirrors the synchronous build test below.
+    Effect.runSync(
+      Effect.scoped(
+        Layer.build(layerDesktopClerk(true, events, "darwin", DesktopPreReadyFileSystem.layer)),
+      ),
+    );
+
+    assert.equal(createClerkBridgeMock.mock.calls.length, 0);
+    assert.deepEqual(events, [
+      "setPath:userData:/tmp/app-data/t3code-dev",
+      "requestSingleInstanceLock",
+      "on:second-instance",
+      "on:open-url",
+    ]);
   });
 
   it.each([

@@ -14,6 +14,7 @@ import * as ChildProcessSpawner from "effect/process/ChildProcessSpawner";
 import * as NodeNet from "node:net";
 import * as NodeOS from "node:os";
 
+import { CLOUD_METADATA_PROBE_ENABLED, TAILSCALE_ENABLED } from "@t3tools/shared/disconnected";
 import { isTailnetHost } from "@t3tools/shared/hostClassification";
 
 import * as ServerConfig from "../config.ts";
@@ -114,9 +115,11 @@ export const make = Effect.gen(function* () {
   // Only the service default listens on every interface without being asked,
   // so only it checks once whether it runs in a cloud. The check starts now so
   // the first client does not wait for its timeout.
-  const onCloudVm = config.privateNetworkOnly
-    ? yield* Effect.cached(probeCloudMetadata)
-    : Effect.succeed(false);
+  // t3code-disconnected: the cloud metadata probe is disabled (DISCONNECTED.md).
+  const onCloudVm =
+    CLOUD_METADATA_PROBE_ENABLED && config.privateNetworkOnly
+      ? yield* Effect.cached(probeCloudMetadata)
+      : Effect.succeed(false);
   yield* Effect.forkDetach(onCloudVm);
 
   const resolve = Effect.gen(function* () {
@@ -129,7 +132,8 @@ export const make = Effect.gen(function* () {
       }),
     ];
     // Serve setup can fail without stopping startup; advertise only after it answers as this server.
-    if (config.tailscaleServeEnabled) {
+    // t3code-disconnected: Tailscale is disabled (DISCONNECTED.md).
+    if (TAILSCALE_ENABLED && config.tailscaleServeEnabled) {
       const servedUrl = yield* readTailscaleStatus.pipe(
         Effect.map((status) => status.magicDnsName),
         Effect.flatMap((magicDnsName) => {

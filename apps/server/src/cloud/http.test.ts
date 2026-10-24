@@ -73,7 +73,8 @@ const layerConfig = Layer.effect(
 
 // Real credential issuance, verification, origin checks and signing; no relay or tunnel is started.
 const layerLinkProofRoutes = HttpApiBuilder.layer(LinkProofTestApi).pipe(
-  Layer.provide([AuthHttp.layer, ConnectHttp.layer]),
+  // t3code-disconnected: ConnectHttp.layer is gated off; these tests cover upstream's handlers.
+  Layer.provide([AuthHttp.layer, ConnectHttp.layerEnabled]),
   Layer.provide(AuthHttp.layerAuthenticatedAuth),
   Layer.provide(CloudLink.layer),
   Layer.provide(
