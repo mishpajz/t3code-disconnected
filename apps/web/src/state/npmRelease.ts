@@ -1,3 +1,4 @@
+import { NPM_RELEASE_CHECK_ENABLED } from "@t3tools/shared/disconnected";
 import { useAtomValue } from "@effect/atom-react";
 import { npmReleaseDatabaseMigration } from "@t3tools/shared/cliRelease";
 import * as Effect from "effect/Effect";
@@ -15,6 +16,8 @@ export interface NpmRelease {
 export const npmReleaseAtom = Atom.family((spec: string) =>
   Atom.make(
     Effect.gen(function* () {
+      // t3code-disconnected: no npm polling or update UI when release checks are disabled.
+      if (!NPM_RELEASE_CHECK_ENABLED) return null;
       const response = yield* HttpClient.get(
         `https://registry.npmjs.org/t3/${encodeURIComponent(spec)}`,
       );

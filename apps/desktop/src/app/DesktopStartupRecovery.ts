@@ -1,4 +1,5 @@
 import type { DesktopUpdateState } from "@t3tools/contracts";
+import { DESKTOP_AUTO_UPDATE_ENABLED } from "@t3tools/shared/disconnected";
 import * as Effect from "effect/Effect";
 import * as FileSystem from "effect/FileSystem";
 import * as Option from "effect/Option";
@@ -75,6 +76,16 @@ const actionLink = (action: StartupRecoveryAction, label: string, primary = fals
   `<a class="button${primary ? " primary" : ""}" href="${ACTION_ORIGIN}/${action}">${escapeHtml(label)}</a>`;
 
 function describeOffer(offer: StartupRecoveryOffer): { text: string; action: string } {
+  // t3code-disconnected: upstream's releases page would replace the fork (DISCONNECTED.md).
+  if (!DESKTOP_AUTO_UPDATE_ENABLED && (offer._tag === "Reinstall" || offer._tag === "Releases")) {
+    return {
+      text:
+        offer._tag === "Reinstall"
+          ? `Version ${offer.version} started correctly on this computer. Install its T3 Code Disconnected installer to go back.`
+          : "Install a different T3 Code Disconnected build to recover.",
+      action: "",
+    };
+  }
   switch (offer._tag) {
     case "Checking":
       return { text: "Checking for a newer version…", action: "" };
@@ -192,6 +203,7 @@ export const listen: Effect.Effect<
     action: StartupRecoveryAction,
   ) {
     yield* logInfo("startup recovery action", { action });
+    if (!DESKTOP_AUTO_UPDATE_ENABLED && (action === "reinstall" || action === "releases")) return;
     const current = yield* offer;
     switch (action) {
       case "update": {

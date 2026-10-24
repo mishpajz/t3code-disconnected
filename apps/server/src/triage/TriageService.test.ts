@@ -1,6 +1,7 @@
 import * as NodeServices from "@effect/platform-node/NodeServices";
 import { GitCommandError } from "@t3tools/contracts";
 import { assert, it } from "@effect/vitest";
+import { vi } from "vite-plus/test";
 import * as Context from "effect/Context";
 import * as Effect from "effect/Effect";
 import * as FileSystem from "effect/FileSystem";
@@ -14,6 +15,15 @@ import * as GitVcsDriver from "../vcs/GitVcsDriver.ts";
 import * as VcsProcess from "../vcs/VcsProcess.ts";
 import * as TriageService from "./TriageService.ts";
 import { pickSourceRef } from "./TriageService.ts";
+
+// t3code-disconnected: these tests cover upstream's clone, so they turn it on.
+const disconnectedGate = vi.hoisted(() => ({ triageUpstreamFetchEnabled: true }));
+vi.mock("@t3tools/shared/disconnected", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("@t3tools/shared/disconnected")>()),
+  get TRIAGE_UPSTREAM_FETCH_ENABLED() {
+    return disconnectedGate.triageUpstreamFetchEnabled;
+  },
+}));
 
 const MAIN = "a1dc856ee61278d0199c36d4bcdef5fdea4d21fe\trefs/heads/main";
 
@@ -159,4 +169,19 @@ it.effect("does not trust a folder without its own .git, even inside a repo at t
     assert.notInclude(commands, "rev-parse");
     assert.include(yield* readContext, "is not a complete checkout");
   }).pipe(Effect.provide(TestLayer)),
+);
+
+it.effect("disconnected builds start triage without contacting the repository", () =>
+  Effect.gen(function* () {
+    disconnectedGate.triageUpstreamFetchEnabled = false;
+    const { triage, commands } = yield* makeTriage();
+
+    yield* triage.prepare({ client: {} });
+
+    assert.deepEqual(commands, []);
+    assert.include(yield* readContext, "does not download T3 Code's source on its own");
+  }).pipe(
+    Effect.ensuring(Effect.sync(() => (disconnectedGate.triageUpstreamFetchEnabled = true))),
+    Effect.provide(TestLayer),
+  ),
 );

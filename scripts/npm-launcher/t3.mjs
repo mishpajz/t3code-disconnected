@@ -1,5 +1,6 @@
 #!/usr/bin/env node
 // Share the installer's runtime cache; pre-0.0.41 services re-enter here over IPC.
+import { RUNTIME_DOWNLOADS_ENABLED } from "./disconnected.mjs";
 import { spawn, spawnSync } from "node:child_process";
 import crypto from "node:crypto";
 import fs from "node:fs";
@@ -126,7 +127,13 @@ async function main() {
     );
   }
   const dir = path.join(t3Home(), "runtime", "versions", version);
-  if (!isComplete(dir)) await install(dir, key);
+  if (!isComplete(dir)) {
+    // t3code-disconnected: only an already installed runtime can be launched.
+    if (!RUNTIME_DOWNLOADS_ENABLED) {
+      throw new Error("Runtime downloads are disabled in this build. Install t3 manually.");
+    }
+    await install(dir, key);
+  }
 
   // Service IPC and signals must reach the child; terminal Ctrl-C already does, so do not forward SIGINT twice.
   const ipc = process.send !== undefined;

@@ -1,12 +1,14 @@
 import * as NodeFileSystem from "@effect/platform-node/NodeFileSystem";
 import * as NodeHttpClient from "@effect/platform-node/NodeHttpClient";
 import * as NodeServices from "@effect/platform-node/NodeServices";
+import { TAILSCALE_ENABLED } from "@t3tools/shared/disconnected";
 import { assert, describe, it } from "@effect/vitest";
 import * as Deferred from "effect/Deferred";
 import * as Effect from "effect/Effect";
 import * as Fiber from "effect/Fiber";
 import * as FileSystem from "effect/FileSystem";
 import * as Layer from "effect/Layer";
+import * as Option from "effect/Option";
 import * as Sink from "effect/Sink";
 import * as Stream from "effect/Stream";
 import * as ChildProcessSpawner from "effect/process/ChildProcessSpawner";
@@ -141,8 +143,12 @@ const withHarness = <A, E, R>(
     );
   }).pipe(Effect.provide(NodeServices.layer), Effect.scoped);
 
+// t3code-disconnected: Tailscale is disabled (DISCONNECTED.md). These cover upstream
+// behaviour that only runs with Tailscale enabled.
+const itTailscale = it.effect.skipIf(!TAILSCALE_ENABLED);
+
 describe("DesktopServerExposure", () => {
-  it.effect("uses cached Tailscale identity to exclude another VPN's pairing address", () => {
+  itTailscale("uses cached Tailscale identity to exclude another VPN's pairing address", () => {
     let statusReads = 0;
     return withHarness(
       {
@@ -169,6 +175,43 @@ describe("DesktopServerExposure", () => {
       }),
     );
   });
+
+  // t3code-disconnected: Tailscale is disabled (DISCONNECTED.md).
+  it.effect(
+    "never runs tailscale, even with Tailscale Serve persisted from an earlier install",
+    () => {
+      let spawns = 0;
+      return withHarness(
+        { ...tailnetNetworkInterfaces, ...lanNetworkInterfaces },
+        Effect.gen(function* () {
+          const serverExposure = yield* DesktopServerExposure.DesktopServerExposure;
+          const settings = yield* DesktopAppSettings.DesktopAppSettings;
+          yield* settings.setTailscaleServe({ enabled: true, port: Option.some(8443) });
+          yield* settings.setServerExposureMode("network-accessible");
+
+          const state = yield* serverExposure.configureFromSettings({ port: 4173 });
+          assert.equal(state.mode, "network-accessible");
+          assert.equal(state.tailscaleServeEnabled, false);
+          assert.equal((yield* serverExposure.backendConfig).tailscaleServeEnabled, false);
+
+          const change = yield* serverExposure.setTailscaleServeEnabled({ enabled: true });
+          assert.equal(change.requiresRelaunch, false);
+          assert.equal(change.state.tailscaleServeEnabled, false);
+
+          const endpoints = yield* serverExposure.getAdvertisedEndpoints;
+          assert.deepEqual(
+            endpoints.map((endpoint) => endpoint.httpBaseUrl),
+            ["http://127.0.0.1:4173/", "http://192.168.1.20:4173/", "http://100.90.1.2:4173/"],
+          );
+          assert.equal(spawns, 0);
+        }),
+        {},
+        layerMockSpawner("{}", () => {
+          spawns += 1;
+        }),
+      );
+    },
+  );
 
   it.effect("falls back to local-only without losing the requested network preference", () =>
     withHarness(
@@ -238,7 +281,7 @@ describe("DesktopServerExposure", () => {
     ),
   );
 
-  it.effect("persists tailscale serve preferences atomically and reports no-op updates", () =>
+  itTailscale("persists tailscale serve preferences atomically and reports no-op updates", () =>
     withHarness(
       emptyNetworkInterfaces,
       Effect.gen(function* () {
@@ -269,7 +312,7 @@ describe("DesktopServerExposure", () => {
     ),
   );
 
-  it.effect("keeps a Tailscale Serve change made while a mode change is saving", () =>
+  itTailscale("keeps a Tailscale Serve change made while a mode change is saving", () =>
     Effect.gen(function* () {
       const modeWriteStarted = yield* Deferred.make<void>();
       const releaseModeWrite = yield* Deferred.make<void>();
@@ -360,7 +403,7 @@ describe("DesktopServerExposure", () => {
     ),
   );
 
-  it.effect(
+  itTailscale(
     "refreshes Tailscale status when addresses change and caches unchanged addresses",
     () => {
       const networkInterfaces: Record<

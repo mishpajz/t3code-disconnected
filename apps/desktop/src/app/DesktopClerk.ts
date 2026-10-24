@@ -15,6 +15,7 @@ import { providerAuthReturnUrl } from "@t3tools/shared/providerAuthReturnUrl";
 import { promptLinkAppPath } from "@t3tools/shared/promptLinks";
 import { readPairingAppLink } from "@t3tools/shared/remote";
 import * as HostProcess from "@t3tools/shared/HostProcess";
+import { T3_CONNECT_ENABLED } from "@t3tools/shared/disconnected";
 import { clerkFrontendApiHostnameFromPublishableKey } from "@t3tools/shared/relayAuth";
 import * as ElectronApp from "../electron/ElectronApp.ts";
 import * as ElectronProtocol from "../electron/ElectronProtocol.ts";
@@ -79,12 +80,16 @@ function resolveDesktopClerkFrontendApiHostname(
 }
 
 export const desktopClerkFrontendApiHostname = resolveDesktopClerkFrontendApiHostname(
-  typeof __T3CODE_BUILD_CLERK_PUBLISHABLE_KEY__ === "undefined"
+  // t3code-disconnected: T3 Connect is disabled (DISCONNECTED.md), so the CSP never allows Clerk.
+  !T3_CONNECT_ENABLED || typeof __T3CODE_BUILD_CLERK_PUBLISHABLE_KEY__ === "undefined"
     ? undefined
     : __T3CODE_BUILD_CLERK_PUBLISHABLE_KEY__,
 );
 
 function createDesktopClerkBridge(stateDir: string, isDevelopment: boolean) {
+  // t3code-disconnected: T3 Connect is disabled (DISCONNECTED.md). The renderer never mounts
+  // Clerk, so skip its bridge; T3 registers its scheme privileges before this runs.
+  if (!T3_CONNECT_ENABLED) return { cleanup() {}, isPrimaryInstance: true };
   return createClerkBridge({
     storage: storage({ path: stateDir }),
     manageSingleInstanceLock: false,

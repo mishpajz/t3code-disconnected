@@ -6,6 +6,7 @@ import {
   type ServerSelfUpdateProgressStage,
   type ServerSelfUpdateResult,
 } from "@t3tools/contracts";
+import { RUNTIME_DOWNLOADS_ENABLED } from "@t3tools/shared/disconnected";
 import * as HostProcess from "@t3tools/shared/HostProcess";
 import * as Config from "effect/Config";
 import * as Context from "effect/Context";
@@ -45,6 +46,8 @@ export function resolveServerSelfUpdateCapability(input: {
   readonly desktopManaged: boolean;
   readonly launcherManaged: boolean;
 }): ServerSelfUpdateCapability | null {
+  // t3code-disconnected: do not offer a server update that this build cannot perform.
+  if (!RUNTIME_DOWNLOADS_ENABLED) return null;
   if (input.desktopManaged) return "desktop-managed" as const;
   return input.launcherManaged ? ("boot-service" as const) : null;
 }
@@ -151,6 +154,11 @@ export const make = Effect.fn("cloud.server_self_update.make")(function* () {
   const update: ServerSelfUpdate["Service"]["update"] = Effect.fn(
     "cloud.server_self_update.update",
   )(function* (input, reportProgress = () => Effect.void, onHandoffAccepted = () => Effect.void) {
+    // t3code-disconnected: direct RPC callers cannot bypass the disabled update capability.
+    if (!RUNTIME_DOWNLOADS_ENABLED)
+      return yield* failWith(
+        "Server updates are disabled in this build. Install updates manually.",
+      );
     if (capability === "desktop-managed") {
       const unsafeCrossing = input.channel === undefined ? null : crossesTrackUnsafely(input);
       if (unsafeCrossing !== null) return yield* failWith(unsafeCrossing);

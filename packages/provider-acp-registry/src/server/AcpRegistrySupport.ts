@@ -14,6 +14,7 @@ import {
 import type { AcpRegistryDistributionPreference } from "../settings.ts";
 import type { AcpRegistrySettings } from "../settings.ts";
 import { cliArchiveTarCommand } from "@t3tools/shared/cliRelease";
+import { ACP_REGISTRY_ENABLED } from "@t3tools/shared/disconnected";
 import * as HostProcess from "@t3tools/shared/HostProcess";
 import {
   mergePathEntries,
@@ -218,6 +219,12 @@ export function toAcpRegistryOperationError(error: AcpRegistryError): AcpRegistr
 }
 
 const isAcpRegistryError = Schema.is(AcpRegistryError);
+
+// t3code-disconnected: cached registry entries must not enable installs or launches either.
+const registryDisabledError = new AcpRegistryError({
+  reason: "registry_unavailable",
+  detail: "ACP Registry is disabled in this build. Configure a Local command instead.",
+});
 
 export type AcpRegistryPlatformTarget =
   | "darwin-aarch64"
@@ -1611,6 +1618,8 @@ export const makeAcpRegistryCatalog = Effect.fn("AcpRegistryCatalog.make")(funct
 
   const search: AcpRegistryCatalog["Service"]["search"] = Effect.fn("AcpRegistryCatalog.search")(
     function* (input) {
+      // t3code-disconnected: browsing stays empty without fetching the registry (DISCONNECTED.md).
+      if (!ACP_REGISTRY_ENABLED) return { agents: [] };
       const registry = yield* recentRegistry();
       const ranked = registry.agents.flatMap((agent) => {
         const distribution = resolveAcpRegistryDistribution({
@@ -1658,6 +1667,8 @@ export const makeAcpRegistryCatalog = Effect.fn("AcpRegistryCatalog.make")(funct
 
   const prepare: AcpRegistryCatalog["Service"]["prepare"] = Effect.fn("AcpRegistryCatalog.prepare")(
     function* (input) {
+      // t3code-disconnected: no registry package or binary downloads (DISCONNECTED.md).
+      if (!ACP_REGISTRY_ENABLED) return yield* registryDisabledError;
       const registry = yield* refreshRegistry();
       const agent = yield* findAgent(registry, input.agentId);
       const distribution = yield* compatibleDistribution(agent, "auto");
@@ -1708,6 +1719,8 @@ export const makeAcpRegistryCatalog = Effect.fn("AcpRegistryCatalog.make")(funct
             } as const)
           : ({ status: "ready", agentId: command, version: null, distribution: "local" } as const);
       }
+      // t3code-disconnected: only the local-command branch above is available.
+      if (!ACP_REGISTRY_ENABLED) return yield* registryDisabledError;
       const agentId = settings.agentId.trim();
       if (agentId.length === 0) return { status: "unconfigured" } as const;
       const registry = yield* loadCachedRegistry();
@@ -1831,6 +1844,8 @@ export const makeAcpRegistryCatalog = Effect.fn("AcpRegistryCatalog.make")(funct
           spawn: { command, args: settings.commandArgs, cwd, env, shell: false },
         } satisfies ResolvedAcpRegistryAgent;
       }
+      // t3code-disconnected: only the local-command branch above is available.
+      if (!ACP_REGISTRY_ENABLED) return yield* registryDisabledError;
       const agentId = settings.agentId.trim();
       if (agentId.length === 0) {
         return yield* new AcpRegistryError({

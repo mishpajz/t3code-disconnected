@@ -6,6 +6,7 @@ import {
   PortSchema,
 } from "@t3tools/contracts";
 import { resolveWorktreeT3Home } from "@t3tools/shared/devHome";
+import { TAILSCALE_ENABLED } from "@t3tools/shared/disconnected";
 import * as HostProcess from "@t3tools/shared/HostProcess";
 import { DEFAULT_SIGNAL_EXPORT } from "@t3tools/shared/observability";
 import { buildPairingAppLink } from "@t3tools/shared/remote";
@@ -95,6 +96,16 @@ export class TailscaleUnavailableError extends Schema.TaggedError<TailscaleUnava
 ) {
   override get message(): string {
     return "Could not talk to Tailscale. Is tailscaled running? Try `tailscale status`.";
+  }
+}
+
+// t3code-disconnected: Tailscale is disabled (DISCONNECTED.md).
+export class TailscaleDisabledError extends Schema.TaggedError<TailscaleDisabledError>()(
+  "TailscaleDisabledError",
+  {},
+) {
+  override get message(): string {
+    return "Tailscale support is disabled in this build. Restart the server with a reachable --host instead.";
   }
 }
 
@@ -502,6 +513,8 @@ export const pairCommand = Command.make("pair", {
       const notes: Array<string> = [];
       let pairingBaseUrl: string;
       if (flags.tailscale) {
+        // t3code-disconnected: Tailscale is disabled (DISCONNECTED.md).
+        if (!TAILSCALE_ENABLED) return yield* new TailscaleDisabledError();
         const resolved = yield* resolveTailscalePairingBase({
           target,
           servePort: flags.tailscaleServePort,
@@ -512,7 +525,10 @@ export const pairCommand = Command.make("pair", {
         pairingBaseUrl = resolveDirectPairingBaseUrl(target.state);
         if (isLoopbackHost(new URL(pairingBaseUrl).hostname)) {
           notes.push(
-            "This URL is only reachable from this machine. Re-run with --tailscale, or restart the server with a reachable --host.",
+            // t3code-disconnected: Tailscale is disabled (DISCONNECTED.md).
+            TAILSCALE_ENABLED
+              ? "This URL is only reachable from this machine. Re-run with --tailscale, or restart the server with a reachable --host."
+              : "This URL is only reachable from this machine. Restart the server with a reachable --host.",
           );
         } else if (target.state.privateNetworkOnly) {
           notes.push(
