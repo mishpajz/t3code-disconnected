@@ -1,0 +1,124 @@
+name: Disconnected Windows installer
+
+# Builds the Windows desktop installer (NSIS, x64) and attaches it to the run as
+# an artifact. Nothing is published or uploaded anywhere else.
+#
+# Unlike upstream's release.yml, this build passes no T3 Connect, Clerk, relay
+# or tracing configuration, has no auto-update feed, and does not embed the WSL
+# runtime (the WSL backend is unavailable; the native Windows backend is used).
+# The installer is unsigned. See DISCONNECTED.md.
+#
+# The egress check runs first and blocks the build if the server or web UI
+# makes any outbound connection (see egress-check/README.md).
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: "App version, e.g. 0.1.0. Empty uses the version in apps/desktop/package.json."
+        type: string
+        default: ""
+      skip_egress_check:
+        description: "Build even if the egress check fails. Needed until the DISCONNECTED.md patches land."
+        type: boolean
+        default: false
+
+permissions:
+  contents: read
+
+jobs:
+  egress:
+    name: Egress check
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+        with:
+          sparse-checkout: |
+            /*
+            !/.repos/
+            !/apps/mobile/modules/t3-terminal/Vendor/**/*.a
+          sparse-checkout-cone-mode: false
+
+      - name: Run egress check
+        id: check
+        continue-on-error: ${{ inputs.skip_egress_check }}
+        run: egress-check/check.sh 360
+
+      - name: Warn about a skipped failure
+        if: steps.check.outcome == 'failure'
+        run: echo "::warning::The egress check failed and was skipped; this installer makes outbound connections."
+
+      - name: Upload report
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: egress-check
+          path: egress-check/out/
+          if-no-files-found: ignore
+          retention-days: 30
+
+  build:
+    name: Build Windows x64 installer
+    needs: egress
+    runs-on: windows-latest
+    timeout-minutes: 60
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+        with:
+          sparse-checkout: |
+            /*
+            !/.repos/
+          sparse-checkout-cone-mode: false
+
+      - name: Setup Vite+
+        uses: voidzero-dev/setup-vp@v1
+        with:
+          node-version-file: package.json
+          cache: false
+          run-install: false
+
+      - name: Resolve package cache path
+        id: package_cache_path
+        shell: pwsh
+        run: '"path=$(vp pm cache dir)" >> $env:GITHUB_OUTPUT'
+
+      - name: Cache packages
+        uses: actions/cache@v6
+        with:
+          path: ${{ steps.package_cache_path.outputs.path }}
+          key: windows-installer-packages-v1-${{ hashFiles('pnpm-lock.yaml') }}
+
+      - name: Install
+        run: vp install
+
+      # The resource monitor is a Rust helper the desktop build compiles with
+      # cargo; the hosted Windows image ships the stable toolchain.
+      - name: Show Rust toolchain
+        run: cargo --version
+
+      - name: Build installer
+        shell: bash
+        env:
+          VERSION: ${{ inputs.version }}
+        run: |
+          args=(--platform win --target nsis --arch x64 --output-dir release --verbose)
+          if [[ -n "$VERSION" ]]; then
+            args+=(--build-version "$VERSION")
+          fi
+          # The build derives the desktop auto-update feed from GITHUB_REPOSITORY.
+          # Without it the app is packaged with no update feed.
+          unset GITHUB_REPOSITORY
+          vp run dist:desktop:artifact "${args[@]}"
+
+      - name: Upload installer
+        uses: actions/upload-artifact@v7
+        with:
+          name: t3code-disconnected-windows-x64
+          path: |
+            release/*.exe
+            release/*.exe.blockmap
+          if-no-files-found: error
+          retention-days: 14

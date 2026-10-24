@@ -1,0 +1,78 @@
+name: Disconnected Windows tests
+
+# Manual Windows test run on a GitHub-hosted runner, adapted from upstream's
+# windows-tests.yml (which needs Blacksmith runners). Manual only: Windows
+# minutes count double on private repositories.
+
+on:
+  workflow_dispatch:
+    inputs:
+      package:
+        description: "Workspace directory to test, e.g. apps/server or packages/shared. Empty runs every package except apps/server and apps/mobile."
+        type: string
+        default: ""
+      files:
+        description: "Space-separated test files relative to the package directory. Empty runs the package's whole suite. Requires package."
+        type: string
+        default: ""
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    name: Test (${{ inputs.package || 'all non-server' }})
+    runs-on: windows-latest
+    timeout-minutes: 60
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+        with:
+          sparse-checkout: |
+            /*
+            !/.repos/
+          sparse-checkout-cone-mode: false
+
+      # setup-vp's own cache restores a Linux-shaped store on Windows, which is
+      # slower than no cache. Cache pnpm's Windows store directly.
+      - name: Setup Vite+
+        uses: voidzero-dev/setup-vp@v1
+        with:
+          node-version-file: package.json
+          cache: false
+          run-install: false
+
+      - name: Resolve package cache path
+        id: package_cache_path
+        shell: pwsh
+        run: '"path=$(vp pm cache dir)" >> $env:GITHUB_OUTPUT'
+
+      - name: Cache packages
+        uses: actions/cache@v6
+        with:
+          path: ${{ steps.package_cache_path.outputs.path }}
+          key: windows-tests-packages-v1-${{ hashFiles('pnpm-lock.yaml') }}
+
+      - name: Install
+        run: vp install
+
+      - name: Ensure Electron runtime is installed
+        if: inputs.package == '' || inputs.package == 'apps/desktop'
+        run: vp run --filter "@t3tools/desktop" ensure:electron
+
+      # `vp run ... test -- <files>` does not forward positional args to vitest,
+      # so file-scoped runs call `vp test run` inside the package instead.
+      - name: Test
+        shell: pwsh
+        env:
+          PACKAGE: ${{ inputs.package }}
+          FILES: ${{ inputs.files }}
+        run: |
+          if ($env:PACKAGE -eq '') {
+            vp run --parallel --concurrency-limit 4 --filter '!t3' --filter '!@t3tools/monorepo' --filter '!@t3tools/mobile' test
+          } elseif ($env:FILES -eq '') {
+            vp run --filter "./$env:PACKAGE" test
+          } else {
+            Set-Location $env:PACKAGE
+            vp test run $env:FILES.Split(' ')
+          }

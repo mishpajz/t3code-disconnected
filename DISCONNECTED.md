@@ -79,8 +79,13 @@ patched, beyond what is needed to keep the build working.
 - [ ] **Copilot launched through a wrapper.** Copilot-specific handling (nested subagents)
       also applies when Copilot is started through a wrapper executable, not only one named
       `copilot` (`packages/provider-acp-registry/src/server/adapter.ts`).
-- [ ] **Outbound check script.** Lists outbound URLs and tunnel or VPN tool names in the
-      source, to rerun after each upstream rebase.
+- [x] **Egress check.** Runs the server and web UI with no route to the internet and
+      records every DNS lookup and connection attempt ([`egress-check/`](./egress-check/README.md)).
+      Runs before every Windows installer build.
+- [x] **Source check script.** Lists outbound URLs and tunnel or VPN tool names in the
+      source, to catch calls the egress check doesn't exercise, and fails on any not in its
+      reviewed baseline ([`egress-check/source-check.mjs`](./egress-check/README.md#source-check)).
+      Runs in Disconnected CI.
 
 ## Remote access over Dev Tunnels
 
@@ -121,7 +126,27 @@ git rebase upstream/main
 
 The list of outbound calls above comes from an audit of upstream at commit
 [`bb7783e`](https://github.com/pingdotgg/t3code/commit/bb7783e295506ad423f527ed28a019836e331e8c); the fork itself started from a slightly newer `main`.
-After each rebase, rerun the outbound check and review anything new.
+After each rebase, run `egress-check/check.sh` and `node egress-check/source-check.mjs`
+and review anything new.
+
+## CI and builds
+
+Upstream's workflows are **disabled in the repository settings**, not deleted, so rebases
+don't conflict on them. They need upstream's Blacksmith runners and secrets, and their deploy
+and publish jobs only run in `pingdotgg/t3code`. Workflows that upstream adds later start out
+enabled; check the Actions tab after a rebase and disable any new ones with
+`gh workflow disable <name>`.
+
+The fork's own workflows run on GitHub-hosted runners and are prefixed `disconnected-`:
+
+| Workflow                             | Runs on                                                      | What it does                                                                                                  |
+| ------------------------------------ | ------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------- |
+| `disconnected-ci.yml`                | Pull requests and pushes to `main`, except docs-only changes | Lint, source check, build and typecheck, and tests for the desktop scope                                      |
+| `disconnected-windows-tests.yml`     | Manual                                                       | Tests on Windows, for the whole repo or one package                                                           |
+| `disconnected-windows-installer.yml` | Manual                                                       | Runs the egress check, then builds the Windows x64 installer and attaches it to the run; nothing is published |
+
+The Windows installer is built without T3 Connect, Clerk or relay configuration, without an
+auto-update feed, and without the WSL runtime. It is **unsigned**.
 
 ## License
 
