@@ -1,0 +1,2 @@
+# Destinations the egress check accepts: one hostname, *.domain, or IPv4
+# address per line. Keep this empty unless there is a reason, and say why.

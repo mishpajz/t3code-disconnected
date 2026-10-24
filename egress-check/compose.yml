@@ -1,0 +1,26 @@
+# Runs the server and a headless browser on a Docker network with no route to
+# the internet, recording every DNS lookup and connection attempt. Start it
+# with egress-check/check.sh.
+name: t3code-egress-check
+
+services:
+  t3:
+    build:
+      context: ..
+      dockerfile: egress-check/Dockerfile
+    networks: [sandbox]
+    # tcpdump needs raw sockets; the server and browser run as an unprivileged user.
+    cap_add: [NET_ADMIN, NET_RAW]
+    # tcpdump's tcp[] filters only match IPv4, so keep everything on IPv4.
+    sysctls:
+      net.ipv6.conf.all.disable_ipv6: 1
+    environment:
+      EGRESS_IDLE_SECONDS: ${EGRESS_IDLE_SECONDS:-360}
+    volumes:
+      # Mount the check's own scripts so editing them needs no image rebuild.
+      - .:/app/egress-check:ro
+      - ./out:/out
+
+networks:
+  sandbox:
+    internal: true
