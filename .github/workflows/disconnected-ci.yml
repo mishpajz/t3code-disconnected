@@ -53,6 +53,9 @@ jobs:
       - name: Ensure Electron runtime is installed
         run: vp run --filter @t3tools/desktop ensure:electron
 
+      - name: Check source for outbound URLs and tunnel tools
+        run: node egress-check/source-check.mjs
+
       - name: Check unused code
         run: vp run knip:check
 
