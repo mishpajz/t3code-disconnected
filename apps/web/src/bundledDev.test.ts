@@ -45,7 +45,13 @@ export const startup = Promise.resolve().then(() => globalThis.onStarted(Shared(
       publicDir: NodeURL.fileURLToPath(new URL("../public", import.meta.url)),
       logLevel: "silent",
       resolve: {
-        alias: { react: NodePath.dirname(NodeURL.fileURLToPath(import.meta.resolve("react"))) },
+        alias: {
+          react: NodePath.dirname(NodeURL.fileURLToPath(import.meta.resolve("react"))),
+          // t3code-disconnected: the copied bootError.ts imports the gates (DISCONNECTED.md).
+          "@t3tools/shared/disconnected": NodeURL.fileURLToPath(
+            import.meta.resolve("@t3tools/shared/disconnected"),
+          ),
+        },
       },
       experimental: { bundledDev: true },
       plugins: [

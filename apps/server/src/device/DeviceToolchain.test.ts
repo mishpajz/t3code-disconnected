@@ -5,6 +5,7 @@ import * as Effect from "effect/Effect";
 import * as FileSystem from "effect/FileSystem";
 import * as Path from "effect/Path";
 import * as ChildProcessSpawner from "effect/process/ChildProcessSpawner";
+import { vi } from "vite-plus/test";
 
 import * as ProcessRunner from "../processRunner.ts";
 import {
@@ -13,6 +14,35 @@ import {
   ensureDeviceHub,
   isDeviceHubInstalled,
 } from "./DeviceToolchain.ts";
+
+// t3code-disconnected: these tests cover upstream's installer, so they turn downloads on.
+const disconnectedGate = vi.hoisted(() => ({ runtimeDownloadsEnabled: true }));
+vi.mock("@t3tools/shared/disconnected", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("@t3tools/shared/disconnected")>()),
+  get RUNTIME_DOWNLOADS_ENABLED() {
+    return disconnectedGate.runtimeDownloadsEnabled;
+  },
+}));
+
+it.effect("disconnected builds do not run npm and say how to install the tool", () =>
+  Effect.gen(function* () {
+    disconnectedGate.runtimeDownloadsEnabled = false;
+    const fs = yield* FileSystem.FileSystem;
+    const baseDir = yield* fs.makeTempDirectoryScoped({ prefix: "t3-device-install-" });
+    const run = vi.fn();
+    const error = yield* ensureDeviceHub(baseDir).pipe(
+      Effect.provideService(ProcessRunner.ProcessRunner, { run }),
+      Effect.flip,
+    );
+    expect(run).not.toHaveBeenCalled();
+    expect(error.message).toContain(`npm install --prefix`);
+    expect(error.message).toContain(`expo-device-hub@${DEVICE_HUB_VERSION}`);
+  }).pipe(
+    Effect.ensuring(Effect.sync(() => (disconnectedGate.runtimeDownloadsEnabled = true))),
+    Effect.scoped,
+    Effect.provide(NodeServices.layer),
+  ),
+);
 
 it.effect("failed installation cleans staging and exposes only a safe failure message", () =>
   Effect.gen(function* () {

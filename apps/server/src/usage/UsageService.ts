@@ -11,6 +11,7 @@ import {
   UsageReadError,
 } from "@t3tools/contracts";
 import * as HostProcess from "@t3tools/shared/HostProcess";
+import { REMOTE_PRICING_ENABLED } from "@t3tools/shared/disconnected";
 import * as Cause from "effect/Cause";
 import * as Clock from "effect/Clock";
 import * as Context from "effect/Context";
@@ -40,6 +41,7 @@ import type {
   UsageRecord,
 } from "@t3tools/provider-core/server/usage";
 import { canonicalModelFilter, resolveModelAliases, UsageAggregator } from "./usageAggregation.ts";
+import { BUNDLED_USAGE_RATES } from "./usageBundledRates.ts";
 import {
   createOverrideRateTable,
   isUnlistedModel,
@@ -260,7 +262,7 @@ export const make = Effect.gen(function* () {
 
   const pricing = (): UsagePricing => ({
     status: ratesStatus,
-    source: LITELLM_RATES_URL,
+    source: REMOTE_PRICING_ENABLED ? LITELLM_RATES_URL : "Bundled rates",
     fetchedAt:
       ratesFetchedAtMs === null ? null : DateTime.formatIso(DateTime.makeUnsafe(ratesFetchedAtMs)),
     knownModels: rates.size,
@@ -294,6 +296,12 @@ export const make = Effect.gen(function* () {
   );
 
   const loadRates = Effect.fn("UsageService.loadRates")(function* (force: boolean) {
+    // t3code-disconnected: use bundled prices even on explicit refresh (DISCONNECTED.md).
+    if (!REMOTE_PRICING_ENABLED) {
+      rates = BUNDLED_USAGE_RATES;
+      ratesStatus = "cached";
+      return;
+    }
     const now = yield* Clock.currentTimeMillis;
     const maxAgeMs = force ? RATES_REFRESH_FLOOR_MS : RATES_TTL_MS;
     yield* loadSavedRates;

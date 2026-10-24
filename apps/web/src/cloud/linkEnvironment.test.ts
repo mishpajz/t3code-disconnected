@@ -28,6 +28,12 @@ import { __resetDesktopPrimaryAuthForTests } from "../environments/primary/deskt
 
 import { readCloudLinkState, unlinkEnvironmentFromCloud } from "./linkEnvironment";
 
+// t3code-disconnected: these tests cover upstream's T3 Connect behaviour, so they turn it on.
+vi.mock("@t3tools/shared/disconnected", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("@t3tools/shared/disconnected")>()),
+  T3_CONNECT_ENABLED: true,
+}));
+
 const TARGET = {
   environmentId: "environment-1",
   label: "Desktop",
