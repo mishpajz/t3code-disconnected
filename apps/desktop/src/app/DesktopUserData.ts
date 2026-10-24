@@ -4,6 +4,11 @@ import * as Path from "effect/Path";
 import * as PlatformError from "effect/PlatformError";
 import * as Schema from "effect/Schema";
 
+import {
+  DESKTOP_OWN_APP_IDENTITY,
+  DISCONNECTED_DESKTOP_PACKAGE_NAME,
+} from "@t3tools/shared/disconnected";
+
 export class DesktopUserDataInitializationError extends Schema.TaggedError<DesktopUserDataInitializationError>()(
   "DesktopUserDataInitializationError",
   {
@@ -54,6 +59,10 @@ export const resolveUserDataPath = Effect.fn("desktop.userData.resolveUserDataPa
         );
     if (input.isDevelopment) {
       return (yield* inspect(legacyPath)) ? legacyPath : destinationPath;
+    }
+    // t3code-disconnected: a profile of its own, never seeded from upstream's.
+    if (DESKTOP_OWN_APP_IDENTITY) {
+      return path.join(input.appDataDirectory, DISCONNECTED_DESKTOP_PACKAGE_NAME);
     }
     // Chromium databases require their own profile for each running version.
     if (input.platform !== "win32") return destinationPath;

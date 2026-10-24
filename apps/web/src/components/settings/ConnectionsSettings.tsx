@@ -1,4 +1,5 @@
 import { SessionPermissions } from "./SessionPermissions";
+import { TAILSCALE_ENABLED } from "@t3tools/shared/disconnected";
 import { ChevronRightIcon, EllipsisIcon } from "lucide-react";
 import { useAtomValue } from "@effect/atom-react";
 import { useState } from "react";
@@ -1121,7 +1122,8 @@ export function ConnectionsSettings({ view }: { readonly view: "environments" | 
               <>
                 {renderNetworkAccessRow()}
                 {renderEndpointRows("endpoint-rail")}
-                {renderTailscaleRow()}
+                {/* t3code-disconnected: Tailscale is disabled (DISCONNECTED.md). */}
+                {TAILSCALE_ENABLED ? renderTailscaleRow() : null}
                 {renderWslRow()}
                 {canReadRelay || canManageRelay ? (
                   <CloudLinkRow canReadRelay={canReadRelay} canManageRelay={canManageRelay} />

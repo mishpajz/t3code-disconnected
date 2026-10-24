@@ -1,4 +1,5 @@
 import { EasDeviceHostConfigs, SshDeviceHostConfigs } from "./device.ts";
+import { PROVIDER_UPDATE_CHECKS_DEFAULT } from "./disconnected.ts";
 import {
   AuthOrchestrationOperateScope,
   AuthSettingsWriteScope,
@@ -1119,7 +1120,10 @@ export const ServerSettings = Schema.Struct({
   responseStreamingMode: ResponseStreamingMode.pipe(
     Schema.withDecodingDefault(Effect.succeed("paragraph" as const)),
   ),
-  enableProviderUpdateChecks: Schema.Boolean.pipe(Schema.withDecodingDefault(Effect.succeed(true))),
+  // t3code-disconnected: off by default (DISCONNECTED.md); users can still opt in.
+  enableProviderUpdateChecks: Schema.Boolean.pipe(
+    Schema.withDecodingDefault(Effect.succeed(PROVIDER_UPDATE_CHECKS_DEFAULT)),
+  ),
   continueThreadsAfterServerUpdate: Schema.Boolean.pipe(
     Schema.withDecodingDefault(Effect.succeed(true)),
   ),

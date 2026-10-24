@@ -7,6 +7,7 @@ import {
   type DesktopUpdateCheckResult,
   type DesktopUpdateState,
 } from "@t3tools/contracts";
+import { DESKTOP_AUTO_UPDATE_ENABLED } from "@t3tools/shared/disconnected";
 import { errorTag } from "@t3tools/shared/observability";
 import * as Cause from "effect/Cause";
 import * as Context from "effect/Context";
@@ -314,6 +315,10 @@ function getAutoUpdateDisabledReason(args: {
   disabledByEnv: boolean;
   hasUpdateFeedConfig: boolean;
 }): string | null {
+  // t3code-disconnected: no update checks against the release feed (DISCONNECTED.md).
+  if (!DESKTOP_AUTO_UPDATE_ENABLED) {
+    return "Automatic updates are turned off in this build.";
+  }
   if (!args.hasUpdateFeedConfig) {
     return "Automatic updates are not available because no update feed is configured.";
   }
