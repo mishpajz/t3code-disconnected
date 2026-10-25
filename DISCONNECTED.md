@@ -139,6 +139,14 @@ enabled behaviour are skipped or force the gate on.
       Copilot rejects stdio servers. codex-acp and pi-acp advertise HTTP but drop the server,
       so they only reach the T3 tools through the `t3 acp-mcp-call` terminal fallback
       (`acpMcpContext` in `packages/provider-acp/src/server/adapter.ts`).
+- [x] **Own desktop app identity.** Packaged builds install as **T3 Code Disconnected**, app ID
+      `com.t3tools.t3code.disconnected`, in their own folder (`%LOCALAPPDATA%\Programs\t3code-disconnected`
+      on Windows) with their own profile folder (`t3code-disconnected`). With upstream's identity,
+      Windows and package managers treat the fork as upstream T3 Code, upstream's installer or
+      updater can replace it, and a running upstream app takes over its window. The profile
+      starts empty and is not copied from upstream's `t3code-v2`. Threads and projects in
+      `~/.t3` are shared as before (`DESKTOP_OWN_APP_IDENTITY`, `scripts/build-desktop-artifact.ts`,
+      `apps/desktop/src/app/DesktopUserData.ts`).
 - [x] **Egress check.** Runs the server and web UI with no route to the internet and
       records every DNS lookup and connection attempt ([`egress-check/`](./egress-check/README.md)).
       Runs before every Windows installer build.

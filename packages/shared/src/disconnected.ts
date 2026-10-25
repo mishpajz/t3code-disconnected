@@ -47,3 +47,15 @@ export const THEME_MARKETPLACE_ENABLED = !DISCONNECTED;
 
 /** Copying links that open a prompt on T3's hosted app (app.t3.codes). */
 export const PROMPT_LINKS_ENABLED = !DISCONNECTED;
+
+/**
+ * Packaged desktop builds use their own app ID, install folder and profile folder. With
+ * upstream's, Windows and package managers see the fork as upstream T3 Code, upstream's
+ * installer or updater replaces it, and a running upstream app holds its single-instance lock.
+ */
+export const DESKTOP_OWN_APP_IDENTITY = DISCONNECTED;
+
+export const DISCONNECTED_DESKTOP_APP_ID = "com.t3tools.t3code.disconnected";
+export const DISCONNECTED_DESKTOP_PRODUCT_NAME = "T3 Code Disconnected";
+/** Install folder name (from the packaged app's package.json) and profile folder name. */
+export const DISCONNECTED_DESKTOP_PACKAGE_NAME = "t3code-disconnected";
