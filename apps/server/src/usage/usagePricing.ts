@@ -205,7 +205,8 @@ function resolveRate(table: RateTable, model: string): ModelRate | null {
   const key = stripVariantSuffix(normalizeRateKey(model));
   const bareName = bareModelName(key);
   if (bareName.length === 0 || UNPRICEABLE_MODELS.has(bareName)) return null;
-  return table.get(key) ?? null;
+  // Copilot dots Claude versions (`claude-sonnet-4.5`) where LiteLLM dashes them.
+  return table.get(key) ?? table.get(key.replace(/(\d)\.(?=\d)/g, "$1-")) ?? null;
 }
 
 export type PricedRecord = Pick<

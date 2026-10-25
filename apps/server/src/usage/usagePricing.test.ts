@@ -222,6 +222,18 @@ describe("usage pricing", () => {
     expect(lookupRate(table, "anthropic/Claude-Fable-5-1[1m]")).toBeNull();
   });
 
+  it("prices a Copilot-style dotted version at the dashed model's rate", () => {
+    const table = parseRateTable({
+      "claude-sonnet-4-6": rate(3e-6),
+      "gpt-5.2": rate(1e-6),
+      "gpt-5-2": rate(9e-6),
+    });
+
+    expect(lookupRate(table, "claude-sonnet-4.6")).toEqual(lookupRate(table, "claude-sonnet-4-6"));
+    expect(lookupRate(table, "gpt-5.2")?.inputCostPerToken).toBe(1e-6);
+    expect(lookupRate(table, "claude-sonnet-4.7")).toBeNull();
+  });
+
   it("adds a bare alias when every qualified entry has the same rate", () => {
     const table = parseRateTable({
       "provider-a/example-model": rate(1),

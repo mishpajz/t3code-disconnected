@@ -131,7 +131,8 @@ enabled behaviour are skipped or force the gate on.
 - [x] **Usage history for ACP agents.** ACP Registry instances record the token usage the
       agent returns with each prompt turn and text generation to `acp-usage/<day>.jsonl` in the state directory, and
       the Usage page reads it back as **ACP agents**. Agents that wrap Claude, Codex, Pi or
-      OpenCode are skipped, since Usage already reads their own history
+      OpenCode are skipped, since Usage already reads their own history. Pricing reads
+      Copilot's dotted Claude versions (`claude-sonnet-4.5`) as LiteLLM's dashed ones
       (`packages/provider-acp-registry/src/server/usage.ts`, `onPromptUsage` in
       `packages/provider-acp/src/server/adapter.ts`).
 - [x] **T3 tools over HTTP for ACP agents.** ACP agents that advertise HTTP MCP support get
