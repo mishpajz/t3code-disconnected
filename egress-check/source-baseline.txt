@@ -5,6 +5,7 @@ accounts.google.com	apps/server/src/provider/antigravityCallback.ts
 accounts.x.ai	packages/provider-grok/src/server/usageLimits.ts
 agentclientprotocol.com	packages/effect-acp/src/_generated/schema-v1.gen.ts
 agentclientprotocol.com	packages/effect-acp/src/_generated/schema.gen.ts
+agentclientprotocol.com	packages/provider-acp-registry/src/server/copilotAcp.ts
 api.anthropic.com	apps/server/src/provider/claudeResetCredits.ts
 api.anthropic.com	apps/server/src/usage/cliproxyApi.ts
 api.bitbucket.org	packages/source-control-bitbucket/src/server/BitbucketApi.ts
@@ -102,7 +103,6 @@ registry.npmjs.org	packages/provider-core/src/server/maintenanceResolver.ts
 search.brave.com	packages/shared/src/preview.ts
 spell.sh	apps/web/components.json
 storage.googleapis.com	apps/server/src/preview/PreviewBrowser.ts
-t3.chat	apps/server/src/mcp/toolkits/preview/tools.ts
 t3.codes	apps/desktop/resources/linux/com.t3tools.t3code.metainfo.xml
 t3.codes	apps/server/src/cloud/servicePreflight.ts
 t3.codes	apps/server/src/project/ManagedProjectFolders.ts
