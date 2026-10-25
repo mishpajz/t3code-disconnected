@@ -27,9 +27,6 @@ export const REMOTE_PRICING_ENABLED = !DISCONNECTED;
 /** ACP registry index, package downloads and CDN icons; local ACP commands still work. */
 export const ACP_REGISTRY_ENABLED = !DISCONNECTED;
 
-/** Third-party favicon service and remote images for links in chat. */
-export const REMOTE_FAVICONS_ENABLED = !DISCONNECTED;
-
 /** Bitbucket Cloud integration; it checks sign-in against api.bitbucket.org even with no token. */
 export const BITBUCKET_ENABLED = !DISCONNECTED;
 

@@ -25,7 +25,6 @@ import {
 import { useAssetUrlState } from "../../assets/assetUrls";
 import { cn } from "~/lib/utils";
 import { TimelineRowCtx } from "./timelineRowContext";
-import { canAutoLoadChatMedia } from "./remoteMedia";
 
 export const failedToolIconClassName = "text-tool-error-icon/40";
 
@@ -106,10 +105,6 @@ export function ToolActivityIconView(props: {
       resolvedTheme === "dark"
         ? (props.icon.logoUrlDark ?? props.icon.logoUrl)
         : props.icon.logoUrl;
-    // t3code-disconnected: provider-supplied logos can also point at third-party hosts.
-    if (!canAutoLoadChatMedia(src)) {
-      return <WorkEntryIcon name={props.fallbackName} className={fallbackClassName} />;
-    }
     return (
       <ToolActivityImageIcon
         key={src}

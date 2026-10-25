@@ -47,6 +47,10 @@ enabled behaviour are skipped or force the gate on.
   `api.bitbucket.org` on its own and is not needed here.
 - **The built-in browser.** It can still download Chrome on first use and browse wherever
   you or an agent navigate.
+- **Web content in chat and pull requests.** Images, audio and video embedded in messages or
+  pull request descriptions load like any page you browse. Link and tool favicons and
+  provider-supplied logos load too; favicons for links come from Google's favicon service
+  (`packages/shared/src/favicon.ts`).
 - **Hosted web app and mobile app.** See [Scope](#scope). The mobile app also depends on
   T3 Connect for push notifications.
 
@@ -106,10 +110,6 @@ enabled behaviour are skipped or force the gate on.
 - [x] **ACP registry**: local ACP commands only, no registry index, package downloads or CDN
       icons (`ACP_REGISTRY_ENABLED`, `packages/provider-acp-registry`,
       `apps/web/src/components/settings/AcpRegistryIcon.tsx`).
-- [x] **Favicons and external images** in chat and links: no Google favicon service, site or
-      provider-supplied icons, and remote images or videos in chat and pull request
-      descriptions are shown as links instead of loaded (`REMOTE_FAVICONS_ENABLED`,
-      `packages/shared/src/favicon.ts`, `apps/web/src/components/chat/remoteMedia.ts`).
 - [x] **Theme marketplace** (open-vsx.org): hidden; importing theme files still works
       (`THEME_MARKETPLACE_ENABLED`, `apps/web/src/openVsxThemes.ts`).
 - [x] **Prompt links** to app.t3.codes: the **Copy prompt link** button on messages and the
