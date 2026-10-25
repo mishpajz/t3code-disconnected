@@ -29,10 +29,12 @@ vi.mock("@clerk/electron/storage", () => ({
   storage: storageMock,
 }));
 
-// t3code-disconnected: most tests here cover upstream's Clerk bridge, so they turn T3 Connect on.
+// t3code-disconnected: most tests here cover upstream's Clerk bridge, so they turn T3 Connect on
+// and keep upstream's profile folder.
 const disconnectedGate = vi.hoisted(() => ({ t3ConnectEnabled: true }));
 vi.mock("@t3tools/shared/disconnected", async (importOriginal) => ({
   ...(await importOriginal<typeof import("@t3tools/shared/disconnected")>()),
+  DESKTOP_OWN_APP_IDENTITY: false,
   get T3_CONNECT_ENABLED() {
     return disconnectedGate.t3ConnectEnabled;
   },
