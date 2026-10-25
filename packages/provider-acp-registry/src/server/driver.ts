@@ -175,6 +175,7 @@ function baseSnapshot(
     readonly message?: string;
     readonly probe?: AcpRegistryConfigurationProbeResult;
     readonly probeError?: AcpRegistryOperationError;
+    readonly knownModels?: ReadonlyArray<ServerProviderModel>;
   },
 ): ServerProvider {
   const iconUrl =
@@ -210,7 +211,12 @@ function baseSnapshot(
             : input.settings.agentId.length > 0),
     },
     ...(input.message ? { message: input.message } : {}),
-    models: modelsFromDiscovery(input.probe?.probe, input.settings.customModels),
+    // Without a fresh probe, keep the last discovered models rather than
+    // collapsing the picker to "Default" until discovery succeeds again.
+    models:
+      input.probe === undefined && input.knownModels !== undefined
+        ? input.knownModels
+        : modelsFromDiscovery(input.probe?.probe, input.settings.customModels),
     ...(input.probe === undefined
       ? {}
       : {
@@ -290,6 +296,7 @@ export function buildCheckedAcpRegistrySnapshot(
       | { readonly status: "failed"; readonly message: string };
     readonly probe?: AcpRegistryConfigurationProbeResult;
     readonly probeError?: AcpRegistryOperationError;
+    readonly knownModels?: ReadonlyArray<ServerProviderModel>;
   },
 ): ServerProvider {
   const readiness = acpRegistrySnapshotReadiness(input.inspection);
@@ -348,6 +355,7 @@ export const checkAcpRegistryProviderStatus = Effect.fn("AcpRegistryDriver.check
       readonly settings: AcpRegistrySettings;
       readonly cwd: string;
       readonly environment: NodeJS.ProcessEnv;
+      readonly knownModels?: ReadonlyArray<ServerProviderModel>;
     },
     probeConfiguration: AcpRegistryConfigurationProbe<Requirements>,
   ): Effect.fn.Return<ServerProvider, never, AcpRegistrySupport.AcpRegistryCatalog | Requirements> {
@@ -404,6 +412,7 @@ export const checkAcpRegistryProviderReadiness = Effect.fn(
   input: SnapshotIdentity & {
     readonly settings: AcpRegistrySettings;
     readonly environment: NodeJS.ProcessEnv;
+    readonly knownModels?: ReadonlyArray<ServerProviderModel>;
   },
 ): Effect.fn.Return<ServerProvider, never, AcpRegistrySupport.AcpRegistryCatalog> {
   const checkedAt = DateTime.formatIso(yield* DateTime.now);
@@ -561,32 +570,41 @@ export const AcpRegistryDriver: ProviderDriver<
             }),
           );
     });
-    const checkProvider = checkAcpRegistryProviderReadiness(readinessInput).pipe(
-      Effect.provideService(AcpRegistrySupport.AcpRegistryCatalog, catalog),
-      Effect.flatMap(withLiveRuntimeState),
-    );
-    const enrichProvider = checkAcpRegistryProviderStatus(
-      {
-        ...readinessInput,
-        cwd: host.paths.cwd,
-      },
-      probeAcpRegistryConfiguration,
-    ).pipe(
-      Effect.provideService(AcpRegistrySupport.AcpRegistryCatalog, catalog),
-      Effect.provideService(ChildProcessSpawner.ChildProcessSpawner, spawner),
-      Effect.provideService(Crypto.Crypto, crypto),
-    );
     const enrichmentCache = yield* Ref.make<{
       readonly generation: number;
       readonly entry: {
         readonly provider: ServerProvider;
         readonly expiresAt: number;
       } | null;
-    }>({ generation: 0, entry: null });
+      // Models from the last successful probe. Unlike the entry they outlive
+      // the TTL, so a refresh whose probe is still running, was preempted by a
+      // foreground session, or failed keeps showing them.
+      readonly knownModels: ReadonlyArray<ServerProviderModel> | undefined;
+    }>({ generation: 0, entry: null, knownModels: undefined });
+    const withKnownModels = <A extends object>(input: A) =>
+      Ref.get(enrichmentCache).pipe(
+        Effect.map(({ knownModels }) =>
+          knownModels === undefined ? input : { ...input, knownModels },
+        ),
+      );
+    const checkProvider = withKnownModels(readinessInput).pipe(
+      Effect.flatMap(checkAcpRegistryProviderReadiness),
+      Effect.provideService(AcpRegistrySupport.AcpRegistryCatalog, catalog),
+      Effect.flatMap(withLiveRuntimeState),
+    );
+    const enrichProvider = withKnownModels({ ...readinessInput, cwd: host.paths.cwd }).pipe(
+      Effect.flatMap((input) =>
+        checkAcpRegistryProviderStatus(input, probeAcpRegistryConfiguration),
+      ),
+      Effect.provideService(AcpRegistrySupport.AcpRegistryCatalog, catalog),
+      Effect.provideService(ChildProcessSpawner.ChildProcessSpawner, spawner),
+      Effect.provideService(Crypto.Crypto, crypto),
+    );
     const liveSnapshotSemaphore = yield* Semaphore.make(1);
     const invalidateEnrichmentCache = Ref.update(enrichmentCache, (current) => ({
       generation: current.generation + 1,
       entry: null,
+      knownModels: undefined,
     }));
     const enrichProviderCached = Effect.fn("AcpRegistryDriver.enrichProviderCached")(function* (
       baseSnapshot: ServerProvider,
@@ -614,6 +632,7 @@ export const AcpRegistryDriver: ProviderDriver<
                   provider: enriched,
                   expiresAt: now + PROBE_SUCCESS_TTL_MS,
                 },
+                knownModels: enriched.models,
               }
             : current,
         );

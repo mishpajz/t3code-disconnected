@@ -1,6 +1,7 @@
 import { AcpRegistryOperationError, ProviderInstanceId } from "@t3tools/contracts";
 import { AcpRegistrySettings } from "../settings.ts";
 import { describe, expect, it } from "@effect/vitest";
+import { createModelCapabilities } from "@t3tools/shared/model";
 import * as Effect from "effect/Effect";
 import * as Option from "effect/Option";
 import * as Schema from "effect/Schema";
@@ -29,6 +30,15 @@ const noSessionManagement = {
   canDelete: false,
   canConfigureProviders: false,
 } as const;
+const knownModels = [
+  {
+    slug: "agent-model",
+    name: "Agent Model",
+    isCustom: false,
+    isDefault: true,
+    capabilities: createModelCapabilities({ optionDescriptors: [] }),
+  },
+];
 
 function catalogWithInspection(
   inspection: AcpRegistrySupport.AcpRegistryInspection,
@@ -398,6 +408,66 @@ describe("acpRegistrySnapshotReadiness", () => {
         auth: { status: "unknown" },
         message: "Checking ACP authentication, models, and commands in the background...",
       });
+    }),
+  );
+
+  it.effect("keeps previously discovered models while background discovery runs", () =>
+    Effect.gen(function* () {
+      const snapshot = yield* checkAcpRegistryProviderReadiness({
+        ...identity,
+        settings: decodeSettings({ agentId: "test-agent" }),
+        environment: { PATH: "/provider/bin" },
+        knownModels,
+      }).pipe(
+        Effect.provideService(
+          AcpRegistrySupport.AcpRegistryCatalog,
+          catalogWithInspection({
+            status: "ready",
+            agentId: "test-agent",
+            version: "1.0.0",
+            distribution: "npx",
+          }),
+        ),
+      );
+
+      expect(snapshot.models.map((model) => model.slug)).toEqual(["agent-model"]);
+    }),
+  );
+
+  it.effect("keeps previously discovered models when a later probe fails", () =>
+    Effect.gen(function* () {
+      const snapshot = yield* checkAcpRegistryProviderStatus(
+        {
+          ...identity,
+          settings: decodeSettings({ agentId: "test-agent" }),
+          cwd: "/workspace",
+          environment: { PATH: "/provider/bin" },
+          knownModels,
+        },
+        () =>
+          Effect.fail(
+            new AcpRegistryOperationError({
+              reason: "probe_failed",
+              message: "The ACP agent could not create a test session.",
+            }),
+          ),
+      ).pipe(
+        Effect.provideService(
+          AcpRegistrySupport.AcpRegistryCatalog,
+          catalogWithInspection({
+            status: "ready",
+            agentId: "test-agent",
+            version: "1.0.0",
+            distribution: "npx",
+          }),
+        ),
+      );
+
+      expect(snapshot).toMatchObject({
+        status: "warning",
+        message: "The ACP agent could not create a test session.",
+      });
+      expect(snapshot.models.map((model) => model.slug)).toEqual(["agent-model"]);
     }),
   );
 });

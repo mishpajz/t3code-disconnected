@@ -5,7 +5,7 @@ import * as Effect from "effect/Effect";
 import * as Fiber from "effect/Fiber";
 import * as Option from "effect/Option";
 
-import type { AcpRegistryAvailableCommands } from "./probe.ts";
+import type { AcpRegistryAvailableCommands, AcpRegistryLiveConfiguration } from "./probe.ts";
 import * as AcpRegistryRuntimeCoordinator from "./AcpRegistryRuntimeCoordinator.ts";
 
 describe("AcpRegistryRuntimeCoordinator", () => {
@@ -255,6 +255,26 @@ describe("AcpRegistryRuntimeCoordinator", () => {
       yield* Deferred.await(cleared);
       expect(Option.isNone(yield* coordinator.getUrlAuthAction(instanceId))).toBe(true);
       yield* Fiber.interrupt(consumer);
+    }).pipe(Effect.provide(AcpRegistryRuntimeCoordinator.layer), Effect.scoped),
+  );
+  it.effect("keeps the known models when a live update advertises none", () =>
+    Effect.gen(function* () {
+      const coordinator = yield* AcpRegistryRuntimeCoordinator.AcpRegistryRuntimeCoordinator;
+      const instanceId = ProviderInstanceId.make("acpRegistry_copilot");
+      const withModels: AcpRegistryLiveConfiguration = {
+        models: [{ id: "gpt-5", name: "GPT-5", description: null }],
+        currentModelId: "gpt-5",
+        configOptions: [],
+      };
+
+      yield* coordinator.publishLiveConfiguration(instanceId, withModels);
+      yield* coordinator.publishLiveConfiguration(instanceId, {
+        models: [],
+        currentModelId: null,
+        configOptions: [],
+      });
+
+      expect(yield* coordinator.getLiveConfiguration(instanceId)).toEqual(Option.some(withModels));
     }).pipe(Effect.provide(AcpRegistryRuntimeCoordinator.layer), Effect.scoped),
   );
 });

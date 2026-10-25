@@ -214,13 +214,24 @@ const make = Effect.gen(function* () {
 
   const publishLiveConfiguration: AcpRegistryRuntimeCoordinator["Service"]["publishLiveConfiguration"] =
     (instanceId, configuration) =>
-      Ref.update(liveConfigurationByInstance, (current) =>
-        new Map(current).set(instanceId, configuration),
-      ).pipe(
-        Effect.andThen(
+      Ref.modify(liveConfigurationByInstance, (current) => {
+        const previous = current.get(instanceId);
+        // A session update without a model option (for example one that only
+        // changes the mode) must not wipe the picker for the whole instance.
+        const next =
+          configuration.models.length === 0 && previous !== undefined && previous.models.length > 0
+            ? {
+                ...configuration,
+                models: previous.models,
+                currentModelId: previous.currentModelId,
+              }
+            : configuration;
+        return [next, new Map(current).set(instanceId, next)] as const;
+      }).pipe(
+        Effect.flatMap((next) =>
           PubSub.publish(liveConfigurationUpdates, {
             instanceId,
-            configuration,
+            configuration: next,
           }),
         ),
         Effect.asVoid,
