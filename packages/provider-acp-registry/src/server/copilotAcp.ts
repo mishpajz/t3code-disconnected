@@ -2,6 +2,8 @@ import * as Effect from "effect/Effect";
 import * as Schema from "effect/Schema";
 import type * as AcpSchema from "effect-acp/compat";
 import type { AcpToolCallState } from "@t3tools/provider-acp/server/runtimeModel";
+import type { ProviderAdapterV2RuntimePolicy } from "@t3tools/provider-core/server/ProviderAdapter";
+import type { AcpRegistrySettings } from "../settings.ts";
 import type {
   AcpAdapterV2ExtensionContext,
   AcpAdapterV2SubagentUpdate,
@@ -171,3 +173,24 @@ export function extractCopilotSubagentUpdate(
 export function isCopilotLocalCommand(commandPath: string, commandArgs: ReadonlyArray<string>) {
   return [commandPath, ...commandArgs].some((part) => /copilot/i.test(part));
 }
+
+// Local installs launch the `copilot` binary with no registry id.
+export function isCopilotAgent(settings: AcpRegistrySettings) {
+  return settings.source === "local"
+    ? isCopilotLocalCommand(settings.commandPath, settings.commandArgs)
+    : settings.agentId === "github-copilot-cli";
+}
+
+const COPILOT_SESSION_MODE = "https://agentclientprotocol.com/protocol/session-modes#";
+
+// T3 owns approvals and plan mode. With Allow All off, Copilot asks before every tool use and
+// T3's runtime mode answers; Autopilot would bypass both, so T3 never selects it.
+export const COPILOT_PINNED_OPTION_IDS: ReadonlySet<string> = new Set(["mode", "allow_all"]);
+
+export const copilotPinnedConfigOptions = (policy: ProviderAdapterV2RuntimePolicy) => [
+  {
+    id: "mode",
+    value: `${COPILOT_SESSION_MODE}${policy.interactionMode === "plan" ? "plan" : "agent"}`,
+  },
+  { id: "allow_all", value: "off" },
+];

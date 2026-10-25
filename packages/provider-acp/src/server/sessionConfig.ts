@@ -55,6 +55,7 @@ function selectChoices(
 export function acpProviderOptionDescriptors(input: {
   readonly configOptions: ReadonlyArray<EffectAcpSchema.SessionConfigOption> | null | undefined;
   readonly modeState: AcpSessionModeState | undefined;
+  readonly hiddenOptionIds?: ReadonlySet<string> | undefined;
 }): ReadonlyArray<ProviderOptionDescriptor> {
   const descriptors: Array<ProviderOptionDescriptor> = [];
   const seen = new Set<string>();
@@ -64,6 +65,11 @@ export function acpProviderOptionDescriptors(input: {
   for (const option of input.configOptions ?? []) {
     // Model and collaboration_mode choices use T3 model and interaction controls.
     if (option.category === "model" || option.category === "collaboration_mode") {
+      continue;
+    }
+    if (input.hiddenOptionIds?.has(option.id) === true) {
+      // The agent's mode state mirrors a hidden mode option; keep it hidden too.
+      if (option.category === "mode") hasModeCategory = true;
       continue;
     }
     const id = boundedOpaqueValue(option.id, MAX_TEXT_LENGTH);

@@ -125,6 +125,12 @@ enabled behaviour are skipped or force the gate on.
       also applies when Copilot is started through a wrapper executable, not only one named
       `copilot`: a local command counts as Copilot when its executable or any argument
       contains `copilot` (`packages/provider-acp-registry/src/server/copilotAcp.ts`).
+- [x] **T3 controls Copilot's approvals and mode.** Copilot's **Mode** (Agent, Plan,
+      Autopilot) and **Allow All** controls are hidden from the model options. Allow All
+      stays off, so Copilot asks before every tool use and T3's access mode answers. The
+      composer's Plan toggle switches Copilot between Agent and Plan, and Autopilot is never
+      selected (`copilotPinnedConfigOptions` in
+      `packages/provider-acp-registry/src/server/copilotAcp.ts`).
 - [x] **Text generation with ACP agents.** ACP Registry instances, such as a local
       `agency copilot --acp --stdio` command, can be picked as the text generation model for
       thread titles, commit messages, pull request content and branch names. Every generation

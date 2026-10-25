@@ -13,7 +13,9 @@ import { makeAcpUsageRecorder } from "./usage.ts";
 import {
   copilotClientCapabilitiesMeta,
   extractCopilotSubagentUpdate,
-  isCopilotLocalCommand,
+  COPILOT_PINNED_OPTION_IDS,
+  copilotPinnedConfigOptions,
+  isCopilotAgent,
   makeCopilotSubagentRouting,
 } from "./copilotAcp.ts";
 import { defaultInstanceIdForDriver, ProviderDriverKind } from "@t3tools/contracts";
@@ -189,12 +191,7 @@ export const makeAcpRegistryAdapterV2 = Effect.fn("makeAcpRegistryAdapterV2")(fu
   const startupKey =
     options.settings.source === "local" ? `local:${options.instanceId}` : registryAgentId;
   const isDevin = registryAgentId === "devin";
-  // Local installs launch the `copilot` binary with no registry id.
-  // t3code-disconnected: also match wrappers around it (DISCONNECTED.md).
-  const isCopilot =
-    registryAgentId === "github-copilot-cli" ||
-    (options.settings.source === "local" &&
-      isCopilotLocalCommand(options.settings.commandPath, options.settings.commandArgs));
+  const isCopilot = isCopilotAgent(options.settings);
   const isClaude =
     registryAgentId === "claude-acp" ||
     (options.settings.source === "local" &&
@@ -249,6 +246,7 @@ export const makeAcpRegistryAdapterV2 = Effect.fn("makeAcpRegistryAdapterV2")(fu
           registerExtensions: copilotRouting.registerExtensions,
           normalizeSessionUpdate: copilotRouting.normalizeSessionUpdate,
           extractSubagentUpdate: extractCopilotSubagentUpdate,
+          pinnedConfigOptions: copilotPinnedConfigOptions,
         }),
     makeRuntime: options.makeRuntime ?? makeAcpRegistryRuntime(runtimeOptions, catalog),
     ...(options.recordPromptUsage === undefined
@@ -265,7 +263,12 @@ export const makeAcpRegistryAdapterV2 = Effect.fn("makeAcpRegistryAdapterV2")(fu
           onSessionConfigurationUpdate: (configOptions, modeState, modelState) =>
             runtimeCoordinator.publishLiveConfiguration(
               options.instanceId,
-              normalizeAcpRegistryLiveConfiguration(configOptions, modeState, modelState),
+              normalizeAcpRegistryLiveConfiguration(
+                configOptions,
+                modeState,
+                modelState,
+                isCopilot ? COPILOT_PINNED_OPTION_IDS : undefined,
+              ),
             ),
           onUrlElicitation: ({ elicitationId, url, message }) => {
             const normalizedUrl = normalizeAcpRegistryWebUrl(url);

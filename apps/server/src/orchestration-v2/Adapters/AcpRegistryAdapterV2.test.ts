@@ -465,6 +465,9 @@ describe("AcpRegistryAdapterV2", () => {
       readonly customModels?: ReadonlyArray<string>;
       readonly storedModel?: string;
       readonly storedModePick?: string;
+      readonly storedOptions?: ReadonlyArray<{ readonly id: string; readonly value: string }>;
+      readonly agentId?: string;
+      readonly interactionMode?: "default" | "plan";
       readonly turnModels?: ReadonlyArray<string>;
       readonly recordPromptUsage?: Parameters<
         typeof makeAcpRegistryAdapterV2
@@ -515,7 +518,7 @@ describe("AcpRegistryAdapterV2", () => {
         selfInvocation: yield* resolveSelfInvocation(),
         instanceId,
         settings: yield* decodeAcpRegistryAdapterSettings({
-          agentId: "fixture-agent",
+          agentId: input.agentId ?? "fixture-agent",
           authMethodId: "test",
           customModels: input.customModels ?? [],
         }),
@@ -550,7 +553,7 @@ describe("AcpRegistryAdapterV2", () => {
       const threadId = ThreadId.make("thread-acp-registry-stored-picks");
       const runtimePolicy = ProviderAdapter.ProviderAdapterV2RuntimePolicy.make({
         runtimeMode: "approval-required",
-        interactionMode: "default",
+        interactionMode: input.interactionMode ?? "default",
         cwd: replayDir,
       });
       const stored: ModelSelection = {
@@ -559,6 +562,7 @@ describe("AcpRegistryAdapterV2", () => {
         ...(input.storedModePick === undefined
           ? {}
           : { options: [{ id: ACP_SESSION_MODE_OPTION_ID, value: input.storedModePick }] }),
+        ...(input.storedOptions === undefined ? {} : { options: input.storedOptions }),
       };
       const configurations: Array<AcpRegistryLiveConfiguration | undefined> = [];
       yield* Effect.gen(function* () {
@@ -643,6 +647,68 @@ describe("AcpRegistryAdapterV2", () => {
           answer("session/set_config_option", { configOptions: [permissionModeOption("auto")] }),
         ],
         storedModePick: "auto",
+      }).pipe(Effect.provide(layerTest), Effect.scoped),
+    );
+
+    const copilotMode = (mode: string) =>
+      `https://agentclientprotocol.com/protocol/session-modes#${mode}`;
+    const copilotOptions = (mode: string, allowAll: string) => [
+      {
+        id: "mode",
+        name: "Mode",
+        category: "mode",
+        type: "select",
+        currentValue: copilotMode(mode),
+        options: ["agent", "plan", "autopilot"].map((id) => ({ value: copilotMode(id), name: id })),
+      },
+      {
+        id: "allow_all",
+        name: "Allow All",
+        category: "permissions",
+        type: "select",
+        currentValue: allowAll,
+        options: ["on", "off"].map((value) => ({ value, name: value })),
+      },
+    ];
+    const copilotSetup = (mode: string, allowAll: string) => ({
+      modes: {
+        currentModeId: copilotMode(mode),
+        availableModes: ["agent", "plan", "autopilot"].map((id) => ({
+          id: copilotMode(id),
+          name: id,
+        })),
+      },
+      configOptions: copilotOptions(mode, allowAll),
+    });
+    const setCopilotOption = (configId: string, value: string, mode: string, allowAll: string) => [
+      outbound("session/set_config_option", { sessionId: "agent-session", configId, value }),
+      answer("session/set_config_option", { configOptions: copilotOptions(mode, allowAll) }),
+    ];
+
+    it.effect("keeps Copilot's Allow All off and its mode on Agent over stored picks", () =>
+      Effect.gen(function* () {
+        const { configurations } = yield* openWithStoredPicks({
+          agentId: "github-copilot-cli",
+          setup: copilotSetup("autopilot", "on"),
+          storedOptions: [
+            { id: "mode", value: copilotMode("autopilot") },
+            { id: "allow_all", value: "on" },
+          ],
+          pickFrames: [
+            ...setCopilotOption("mode", copilotMode("agent"), "agent", "on"),
+            ...setCopilotOption("allow_all", "off", "agent", "off"),
+          ],
+        });
+        assert.deepEqual(configurations[0]?.configOptions, []);
+      }).pipe(Effect.provide(layerTest), Effect.scoped),
+    );
+
+    it.effect("follows T3's plan mode for Copilot", () =>
+      openWithStoredPicks({
+        agentId: "github-copilot-cli",
+        interactionMode: "plan",
+        setup: copilotSetup("agent", "off"),
+        pickFrames: setCopilotOption("mode", copilotMode("plan"), "plan", "off"),
       }).pipe(Effect.provide(layerTest), Effect.scoped),
     );
 

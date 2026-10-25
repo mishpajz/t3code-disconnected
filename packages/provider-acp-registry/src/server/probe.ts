@@ -25,6 +25,7 @@ import type * as EffectAcpSchema from "effect-acp/compat";
 
 import * as PtyAdapter from "@t3tools/shared/PtyAdapter";
 import * as AcpRegistrySupport from "./AcpRegistrySupport.ts";
+import { COPILOT_PINNED_OPTION_IDS, isCopilotAgent } from "./copilotAcp.ts";
 import {
   findModelConfigOption,
   parseSessionModeState,
@@ -174,6 +175,7 @@ export function normalizeAcpRegistryLiveConfiguration(
   configOptions: ReadonlyArray<EffectAcpSchema.SessionConfigOption>,
   modeState?: Parameters<typeof acpProviderOptionDescriptors>[0]["modeState"],
   modelState?: EffectAcpSchema.SessionModelState | null,
+  hiddenOptionIds?: ReadonlySet<string>,
 ): AcpRegistryLiveConfiguration {
   const modelOption = findModelConfigOption(configOptions);
   const currentModelId =
@@ -200,7 +202,7 @@ export function normalizeAcpRegistryLiveConfiguration(
     currentModelId: models.some((model) => model.id === boundedCurrentModelId)
       ? boundedCurrentModelId
       : null,
-    configOptions: acpProviderOptionDescriptors({ configOptions, modeState }),
+    configOptions: acpProviderOptionDescriptors({ configOptions, modeState, hiddenOptionIds }),
   };
 }
 
@@ -252,11 +254,13 @@ export function acpRegistryProbeResult(
   started: AcpSessionRuntime.AcpSessionRuntimeStartResult,
   icon: string | null = null,
   spawn?: AcpRegistryAuthSpawnContext,
+  hiddenOptionIds?: ReadonlySet<string>,
 ): AcpRegistryProbeResult {
   const liveConfiguration = normalizeAcpRegistryLiveConfiguration(
     started.sessionSetupResult.configOptions ?? [],
     parseSessionModeState(started.sessionSetupResult),
     started.sessionSetupResult.models,
+    hiddenOptionIds,
   );
   return AcpRegistryProbeResult.make({
     instanceId,
@@ -450,6 +454,7 @@ export const probeAcpRegistryConfiguration = Effect.fn("AcpRegistryProbe.probeCo
           command: result.resolved.spawn.command,
           args: result.resolved.spawn.args,
         },
+        isCopilotAgent(input.settings) ? COPILOT_PINNED_OPTION_IDS : undefined,
       ),
       slashCommands: result.commands.slashCommands,
       skills: result.commands.skills,

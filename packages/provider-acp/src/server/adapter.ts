@@ -283,6 +283,10 @@ export interface AcpAdapterV2Flavor {
   readonly sessionModeForPolicy?: (
     policy: ProviderAdapter.ProviderAdapterV2RuntimePolicy,
   ) => string | undefined;
+  /** Config options T3 controls itself; applied last, overriding stored selections. */
+  readonly pinnedConfigOptions?: (
+    policy: ProviderAdapter.ProviderAdapterV2RuntimePolicy,
+  ) => ReadonlyArray<{ readonly id: string; readonly value: string }>;
   readonly clientFileSystem?: {
     readonly readTextFile: (
       request: EffectAcpSchema.ReadTextFileRequest,
@@ -6681,9 +6685,12 @@ export const makeAcpAdapterV2 = Effect.fn("makeAcpAdapterV2")(function* (
           const modeSelection = hasNativeConfigWithSyntheticModeId
             ? undefined
             : optionSelections.find((selection) => selection.id === ACP_SESSION_MODE_OPTION_ID);
-          const configSelections = hasNativeConfigWithSyntheticModeId
-            ? optionSelections
-            : optionSelections.filter((selection) => selection.id !== ACP_SESSION_MODE_OPTION_ID);
+          const pinnedOptions = flavor.pinnedConfigOptions?.(runtimePolicy) ?? [];
+          const configSelections = (
+            hasNativeConfigWithSyntheticModeId
+              ? optionSelections
+              : optionSelections.filter((selection) => selection.id !== ACP_SESSION_MODE_OPTION_ID)
+          ).filter((selection) => !pinnedOptions.some((pinned) => pinned.id === selection.id));
           // Probe descriptors union models; skip options absent from the live session and use agent defaults.
           const unsupportedConfigIds = configSelections
             .map((selection) => selection.id)
@@ -6802,6 +6809,14 @@ export const makeAcpAdapterV2 = Effect.fn("makeAcpAdapterV2")(function* (
                 }
               }
               nativeBuildConfigurationBySessionId.delete(startResult.sessionId);
+            }
+          }
+          for (const pinned of pinnedOptions) {
+            const option = (yield* runtime.getConfigOptions).find(
+              (candidate) => candidate.id === pinned.id,
+            );
+            if (option?.type === "select" && option.currentValue !== pinned.value) {
+              yield* runtime.setConfigOption(pinned.id, pinned.value);
             }
           }
           yield* (
