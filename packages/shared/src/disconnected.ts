@@ -1,15 +1,6 @@
-/**
- * Feature gates for the t3code-disconnected fork (see DISCONNECTED.md).
- *
- * These are constants rather than settings or environment variables so that a
- * build cannot be switched back to calling home at runtime. Fork patches check
- * them at the entry points of each subsystem instead of deleting upstream code,
- * which keeps rebases on upstream cheap.
- *
- * Every gate is ANDed into upstream's own switch for the feature (build config,
- * env vars, settings, stored secrets), so the fork gate always wins: if upstream
- * turns a feature on, it still stays off while DISCONNECTED is true.
- */
+// Feature gates for the t3code-disconnected fork (DISCONNECTED.md). Constants, so no runtime
+// setting can turn calling home back on. Each is ANDed into upstream's own switch at the
+// subsystem's entry point, so the gate always wins and upstream code stays in place.
 import { DISCONNECTED } from "@t3tools/contracts/disconnected";
 
 /** T3 Connect: cloud relay, account linking, managed endpoints, cloudflared and Clerk sign-in. */
@@ -47,6 +38,9 @@ export const THEME_MARKETPLACE_ENABLED = !DISCONNECTED;
 
 /** Copying links that open a prompt on T3's hosted app (app.t3.codes). */
 export const PROMPT_LINKS_ENABLED = !DISCONNECTED;
+
+/** Background services connect to 169.254.169.254 to tell whether they run on a cloud VM. */
+export const CLOUD_METADATA_PROBE_ENABLED = !DISCONNECTED;
 
 /**
  * Packaged desktop builds use their own app ID, install folder and profile folder. With

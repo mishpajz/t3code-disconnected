@@ -8,7 +8,7 @@ import {
   sourceControlClients,
   type SourceControlDefinition,
 } from "@t3tools/client-runtime/source-control-clients";
-import { TAILSCALE_ENABLED } from "@t3tools/shared/disconnected";
+import { T3_CONNECT_ENABLED, TAILSCALE_ENABLED } from "@t3tools/shared/disconnected";
 import { DEFAULT_KEYBINDINGS } from "@t3tools/shared/keybindings";
 import { commandLabel } from "./KeybindingsSettings.logic";
 import {
@@ -1178,6 +1178,8 @@ export function filterAvailableSettingsSearchItems(
     (item) =>
       // t3code-disconnected: Tailscale is disabled (DISCONNECTED.md).
       (TAILSCALE_ENABLED || item.id !== "tailscale-https") &&
+      // t3code-disconnected: guest links run over T3 Connect, which is disabled (DISCONNECTED.md).
+      (T3_CONNECT_ENABLED || item.id !== "guest-links") &&
       (!item.cloudOnly || availability.hasCloudPublicConfig) &&
       (!item.environmentOnly || availability.hasEnvironment) &&
       (!item.providerSettingsOnly || availability.hasProviderSettingsEnvironment) &&

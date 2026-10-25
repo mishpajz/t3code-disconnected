@@ -55,8 +55,9 @@ enabled behaviour are skipped or force the gate on.
 ### Disabled by the disconnected switch
 
 - [x] **T3 Connect.** The cloud relay, account linking, managed endpoints, agent-activity
-      publishing and held-webhook wake-ups (`apps/server/src/cloud`, `apps/server/src/relay`,
-      `packages/client-runtime/src/relay`).
+      publishing, held-webhook wake-ups and guest links, whose setting and share actions are
+      hidden (`apps/server/src/cloud`, `apps/server/src/relay`,
+      `packages/client-runtime/src/relay`, `apps/web/src/components/chat/guestShareAvailability.ts`).
 - [x] **cloudflared.** Downloaded and run only for T3 Connect (`packages/shared/src/relayClient.ts`).
 - [x] **Clerk sign-in.** Only used by T3 Connect (`apps/web/src/components/clerk`,
       `apps/desktop/src/app/DesktopClerk.ts`).
@@ -113,6 +114,10 @@ enabled behaviour are skipped or force the gate on.
       command palette's copy prompt link actions are hidden, since opening such a link sends
       the prompt to T3's hosted app (`PROMPT_LINKS_ENABLED`,
       `apps/web/src/components/promptLinks/copyPromptLink.ts`).
+- [x] **Cloud VM check**: a background service with no `T3CODE_HOST` no longer connects to the
+      cloud metadata address `169.254.169.254` to decide whether to hide its LAN addresses, so
+      it always lists them (`CLOUD_METADATA_PROBE_ENABLED`,
+      `apps/server/src/environment/DirectEndpoints.ts`).
 
 ### Other changes
 
