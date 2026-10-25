@@ -1,8 +1,6 @@
-// Lists outbound URL hosts and tunnel or VPN tool names in the desktop app's
-// source, and fails on any (term, file) pair missing from source-baseline.txt.
-// This catches calls the egress check never exercises, such as ones behind a
-// button or a provider. A listed term is not necessarily a call: review new
-// entries, then accept them with --update.
+// Fails on outbound URL hosts or tunnel/VPN tool names in the desktop app's source that are
+// missing from source-baseline.txt, to catch calls the egress check never exercises. A listed
+// term is not necessarily a call: review new entries, then accept them with --update.
 // Usage: node egress-check/source-check.mjs [--update]
 import * as NodeChildProcess from "node:child_process";
 import * as NodeFS from "node:fs";

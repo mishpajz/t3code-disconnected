@@ -26,9 +26,7 @@ for (const line of readLines(`${outDir}/dns.jsonl`)) {
   lookups.set(name, entry);
 }
 
-// tcpdump -nn -tttt lines look like:
-// 2026-10-24 13:00:00.000000 eth0  Out IP 172.18.0.2.40000 > 1.2.3.4.443: Flags [S], ...
-// 2026-10-24 13:00:00.000000 eth0  Out IP 172.18.0.2.40000 > 1.2.3.4.123: NTPv4, length 48
+// tcpdump -nn -tttt: `<date> <time> eth0  Out IP 172.18.0.2.40000 > 1.2.3.4.443: Flags [S], ...`
 // The capture filter only lets through TCP SYNs and UDP, so anything without
 // TCP flags is UDP (tcpdump names well-known UDP protocols instead of "UDP").
 const connections = new Map();

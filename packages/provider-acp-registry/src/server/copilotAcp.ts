@@ -164,11 +164,10 @@ export function extractCopilotSubagentUpdate(
   };
 }
 
-// t3code-disconnected: Copilot is often started through a wrapper (for example
-// `node.exe` with the Copilot script path, since local `.cmd` shims cannot run
-// without a shell, or a site-specific launcher), so look for `copilot` in the
-// executable or any argument rather than requiring a binary named `copilot`.
-// Non-Copilot agents ignore the namespaced capability meta, so a false match is harmless.
+// t3code-disconnected: Copilot often starts through a wrapper (`node.exe` with its script,
+// since `.cmd` shims need a shell, or a site launcher), so match `copilot` in the executable
+// or any argument. Non-Copilot agents ignore the namespaced capability meta, so a false match
+// is harmless.
 export function isCopilotLocalCommand(commandPath: string, commandArgs: ReadonlyArray<string>) {
   return [commandPath, ...commandArgs].some((part) => /copilot/i.test(part));
 }
