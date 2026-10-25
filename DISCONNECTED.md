@@ -92,10 +92,12 @@ enabled behaviour are skipped or force the gate on.
 - [x] **npm version check** from the web UI every five minutes: never runs, so no npm-driven
       update prompt appears (`NPM_RELEASE_CHECK_ENABLED`, `apps/web/src/state/npmRelease.ts`).
 - [x] **CLI self-update and runtime downloads** (`RUNTIME_DOWNLOADS_ENABLED`): `t3 update` and
-      server self-update report that they are disabled; the npm launcher and background service
-      only start a runtime that is already installed; SSH environments run the `t3` already on
-      the remote host's `PATH` and fail with install instructions if there is none
-      (`apps/server/src/cli/update.ts`, `apps/server/src/cloud`, `scripts/npm-launcher`,
+      server self-update report that they are disabled; server update notices ask you to install
+      the matching build instead of copying an `npm`/`npx` command that would fetch upstream; the
+      npm launcher and background service only start a runtime that is already installed; SSH
+      environments run the `t3` already on the remote host's `PATH` and fail with install
+      instructions if there is none (`apps/server/src/cli/update.ts`, `apps/server/src/cloud`,
+      `apps/web/src/components/ServerUpdateAction.tsx`, `scripts/npm-launcher`,
       `packages/ssh/src/tunnel.ts`).
 - [x] **LiteLLM pricing** fetched from GitHub: usage costs use a bundled snapshot of the rates
       instead, even on refresh (`REMOTE_PRICING_ENABLED`,
