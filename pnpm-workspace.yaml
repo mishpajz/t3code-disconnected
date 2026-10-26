@@ -18,6 +18,8 @@ allowBuilds:
   electron: false
   electron-winstaller: false
   esbuild: true
+  # Only the Copilot SDK's unused in-process runtime loads it.
+  koffi: false
   msgpackr-extract: true
   msw: false
   node-pty: true
@@ -205,6 +207,7 @@ minimumReleaseAgeExclude:
   - "@opencode/protocol@2.0.28"
   - "@opencode/schema@2.0.28"
   - "@muse-code/sdk@1.4.6"
+  - "@github/copilot-sdk@1.0.26"
   - "@expo/package-manager@1.14.2"
   - "@react-native/asset-utils@0.88.0"
   - "@react-native/babel-plugin-codegen@0.88.0"
@@ -227,6 +230,18 @@ minimumReleaseAgeExclude:
   - "@pierre/highlights@0.2.0"
   - "@pierre/theming@1.0.2"
   - agent-device@0.21.32
+
+# The Copilot driver always launches the user's own Copilot CLI, so the SDK's
+# bundled per-platform CLIs (about 150 MB each) are never used.
+ignoredOptionalDependencies:
+  - "@github/copilot-sdk-darwin-arm64"
+  - "@github/copilot-sdk-darwin-x64"
+  - "@github/copilot-sdk-linux-arm64"
+  - "@github/copilot-sdk-linux-x64"
+  - "@github/copilot-sdk-linuxmusl-arm64"
+  - "@github/copilot-sdk-linuxmusl-x64"
+  - "@github/copilot-sdk-win32-arm64"
+  - "@github/copilot-sdk-win32-x64"
 
 overrides:
   # Pin every patched package, including transitive dependencies, so lockfile-free
@@ -266,6 +281,7 @@ overrides:
   # The dbus-next patch drops usocket from the package, but pnpm resolves from the
   # registry manifest, so the edge has to be cut here as well.
   "dbus-next>usocket": "-"
+  "@github/copilot-sdk>vscode-jsonrpc": 8.2.1
   # The SDK always receives the user's Claude executable, so its bundled binaries are unused.
   "@anthropic-ai/claude-agent-sdk>@anthropic-ai/claude-agent-sdk-darwin-arm64": "-"
   "@anthropic-ai/claude-agent-sdk>@anthropic-ai/claude-agent-sdk-darwin-x64": "-"
@@ -393,6 +409,9 @@ patchedDependencies:
   "@expo/fingerprint@0.21.5": patches/@expo__fingerprint@0.21.5.patch
   # Observe the owned host exit independently of descendants retaining its stdio.
   "@muse-code/sdk@1.4.6": patches/@muse-code__sdk@1.4.6.patch
+  # A failed request write also rethrows from an async executor nothing awaits; the request
+  # already rejects, and that detached rejection exits the server when a CLI dies mid-write.
+  vscode-jsonrpc@8.2.1: patches/vscode-jsonrpc@8.2.1.patch
   app-builder-lib@26.16.1: patches/app-builder-lib@26.16.1.patch
 
 peerDependencyRules:
