@@ -778,10 +778,24 @@ export const layer: Layer.Layer<
               cause: `Native fork transfer ${nativeForkTransfer.id} has no source provider execution.`,
             });
           }
+          // Rolled-back turns remain in audit history but no longer exist in the provider conversation.
+          const rolledBackRunIds = new Set(
+            sourceProjection.runs
+              .filter((run) => run.status === "rolled_back")
+              .map((run) => run.id),
+          );
+          const rolledBackAttemptIds = new Set(
+            sourceProjection.attempts
+              .filter((attempt) => rolledBackRunIds.has(attempt.runId))
+              .map((attempt) => attempt.id),
+          );
           return yield* loadFromProvider(
             session.forkThread({
               sourceProviderThread,
-              sourceProviderTurns: sourceProjection.providerTurns,
+              sourceProviderTurns: sourceProjection.providerTurns.filter(
+                (turn) =>
+                  turn.runAttemptId === null || !rolledBackAttemptIds.has(turn.runAttemptId),
+              ),
               targetThreadId: projection.thread.id,
               modelSelection: run.modelSelection,
               runtimePolicy: resolvedRuntimePolicy,
