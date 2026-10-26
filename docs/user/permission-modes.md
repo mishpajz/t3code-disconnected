@@ -28,6 +28,9 @@ to you for approval.
 Muse Code offers only **Supervised** and **Full access**. A Muse thread already set to another mode
 runs in **Supervised**.
 
+GitHub Copilot also offers only **Supervised** and **Full access**; **Full access** is Copilot's
+own approve-all. See [GitHub Copilot permissions](./providers-copilot.md#permissions-plans-and-questions).
+
 Grok offers no **Auto-accept edits**. A Grok thread already set to it runs in **Supervised**. Grok
 file-change approvals offer **Allow all edits this session**. Its command approvals have no
 session-wide choice, because Grok would remember that command for the whole project.

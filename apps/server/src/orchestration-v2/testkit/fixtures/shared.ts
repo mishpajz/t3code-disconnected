@@ -348,6 +348,11 @@ export const MUSE_MODEL_SELECTION = {
   model: "muse-spark-1.3-contributor",
 } satisfies ModelSelection;
 
+export const COPILOT_MODEL_SELECTION = {
+  instanceId: ProviderInstanceId.make("copilot"),
+  model: "gpt-6-luna",
+} satisfies ModelSelection;
+
 export const GROK_MODEL_SELECTION = {
   instanceId: ProviderInstanceId.make("grok"),
   model: "grok-build",
