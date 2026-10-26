@@ -33,6 +33,9 @@ runs in **Supervised**.
 T3 Code offers no **Auto-accept edits** or **Full access** for fx. An fx thread already set to either runs in
 **Supervised**.
 
+Like Muse Code, GitHub Copilot offers only **Supervised** and **Full access**; **Full access** is
+Copilot's own approve-all. See [GitHub Copilot permissions](./providers-copilot.md#permissions-plans-and-questions).
+
 Grok offers no **Auto-accept edits**. A Grok thread already set to it runs in **Supervised**. Grok
 file-change approvals offer **Allow all edits this session**. Its command approvals have no
 session-wide choice, because Grok would remember that command for the whole project.

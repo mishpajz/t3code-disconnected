@@ -868,6 +868,14 @@
       "name": "iobuffer",
       "license": "MIT",
       "sourceUrl": "https://github.com/image-js/iobuffer"
+    },
+    {
+      "name": "@github/copilot-sdk",
+      "sourceUrl": "https://github.com/github/copilot-sdk",
+      "generatedNotice": {
+        "licenseId": "MIT",
+        "copyrights": ["Copyright (c) GitHub, Inc."]
+      }
     }
   ]
 }

@@ -135,11 +135,30 @@ enabled behaviour are skipped or force the gate on.
       it always lists them (`CLOUD_METADATA_PROBE_ENABLED`,
       `apps/server/src/environment/DirectEndpoints.ts`).
 
+### Custom providers
+
+Providers the fork adds on top of upstream's. They run only the CLI the user configures.
+
+- [x] **GitHub Copilot provider.** A dedicated `copilot` driver runs the user's Copilot CLI (or
+      a wrapper that launches it) through the official Copilot SDK, one CLI per provider
+      instance and one Copilot session per thread, sharing `~/.copilot`. It supports steering,
+      Stop, queued messages, conversation rewind on checkpoint revert, plan mode with proposed
+      plans, questions, native approve-all for **Full access**, subagent child threads (background
+      ones outlive their turn and wake the thread when they finish), native forks, long-context model tiers, project skills (offered in the composer and sent as
+      Copilot's own `/skill` expansion) and MCP servers (T3 trusts each folder it opens in
+      Copilot), compaction rows and manual `/compact`, the request allowance under **Usage →
+      Limits**, stopping a single subagent, text generation in deleted, unindexed sessions, and
+      Usage history under its own **GitHub Copilot** source (`copilot-usage/<day>.jsonl` in the
+      state directory). It does not depend on the ACP Registry. T3 always passes the configured
+      executable, so the SDK's bundled CLIs are never used: pnpm skips them
+      (`ignoredOptionalDependencies`) and desktop packaging excludes them. Copilot's built-in
+      GitHub MCP server and session telemetry are turned off in its sessions. Usage prices
+      Copilot's dotted Claude versions at the dashed rates, so the bundled rates include
+      `claude-sonnet-4-5` (`packages/provider-copilot`,
+      [user guide](./docs/user/providers-copilot.md)).
+
 ### Other changes
 
-- [ ] **Copilot launched through a wrapper.** Copilot-specific handling (nested subagents)
-      also applies when Copilot is started through a wrapper executable, not only one named
-      `copilot` (`packages/provider-acp-registry/src/server/adapter.ts`).
 - [x] **Own desktop app identity.** Packaged builds install as **T3 Code Disconnected**, app ID
       `com.t3tools.t3code.disconnected`, in their own folder (`%LOCALAPPDATA%\Programs\t3code-disconnected`
       on Windows) with their own profile folder (`t3code-disconnected`). With upstream's identity,
