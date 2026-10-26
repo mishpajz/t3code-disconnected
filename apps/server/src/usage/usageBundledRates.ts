@@ -74,6 +74,12 @@ export const BUNDLED_USAGE_RATES = parseRateTable({
       fast: 2,
     },
   },
+  "claude-sonnet-4-5": {
+    input_cost_per_token: 3e-6,
+    output_cost_per_token: 1.5e-5,
+    cache_read_input_token_cost: 3e-7,
+    cache_creation_input_token_cost: 3.75e-6,
+  },
   "claude-sonnet-4-6": {
     input_cost_per_token: 3e-6,
     output_cost_per_token: 1.5e-5,

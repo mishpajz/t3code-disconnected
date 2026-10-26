@@ -1,5 +1,17 @@
 import { ProviderDriverKind } from "@t3tools/contracts";
 
+import { copilotToolCallApprovedInput } from "./copilot_tool_call_approved/input.ts";
+import { copilotToolCallDeniedInput } from "./copilot_tool_call_denied/input.ts";
+import { assertCopilotToolCallDeniedOutput } from "./copilot_tool_call_denied/output.ts";
+import { assertCopilotMessageSteeringOutput } from "./message_steering/copilot_output.ts";
+import { assertCopilotSubagentV2Output } from "./subagent_v2/copilot_output.ts";
+import { copilotBackgroundSubagentInput } from "./copilot_background_subagent/input.ts";
+import { assertCopilotBackgroundSubagentOutput } from "./copilot_background_subagent/output.ts";
+import { copilotProposedPlanInput } from "./copilot_proposed_plan/input.ts";
+import { assertCopilotProposedPlanOutput } from "./copilot_proposed_plan/output.ts";
+import { assertCopilotProviderThreadResumeOutput } from "./provider_thread_resume/copilot_output.ts";
+import { assertCopilotThreadRollbackOutput } from "./thread_rollback/copilot_output.ts";
+import { assertCopilotTurnInterruptOutput } from "./turn_interrupt/copilot_output.ts";
 import { claudeBackgroundSubagentAfterRootInput } from "./claude_background_subagent_after_root/input.ts";
 import { assertClaudeBackgroundSubagentAfterRootOutput } from "./claude_background_subagent_after_root/output.ts";
 import { claudeBackgroundTaskAfterRootInput } from "./claude_background_task_after_root/input.ts";
@@ -214,6 +226,7 @@ import {
   FX_MODEL_SELECTION,
   GROK_MODEL_SELECTION,
   MUSE_MODEL_SELECTION,
+  COPILOT_MODEL_SELECTION,
   OPENCODE_MODEL_SELECTION,
   OPENCODE2_MODEL_SELECTION,
   PI_MODEL_SELECTION,
@@ -675,6 +688,12 @@ export const ORCHESTRATOR_REPLAY_FIXTURES: ReadonlyArray<OrchestratorReplayFixtu
         modelSelection: MUSE_MODEL_SELECTION,
         assertOutput: assertSimpleOutput,
       },
+      {
+        driver: ProviderDriverKind.make("copilot"),
+        transcriptFile: new URL("./simple/copilot_transcript.ndjson", import.meta.url),
+        modelSelection: COPILOT_MODEL_SELECTION,
+        assertOutput: assertSimpleOutput,
+      },
     ],
   },
   {
@@ -916,6 +935,12 @@ export const ORCHESTRATOR_REPLAY_FIXTURES: ReadonlyArray<OrchestratorReplayFixtu
         transcriptFile: new URL("./subagent_v2/muse_transcript.ndjson", import.meta.url),
         modelSelection: MUSE_MODEL_SELECTION,
         assertOutput: assertMuseSubagentV2Output,
+      },
+      {
+        driver: ProviderDriverKind.make("copilot"),
+        transcriptFile: new URL("./subagent_v2/copilot_transcript.ndjson", import.meta.url),
+        modelSelection: COPILOT_MODEL_SELECTION,
+        assertOutput: assertCopilotSubagentV2Output,
       },
     ],
   },
@@ -1226,6 +1251,12 @@ export const ORCHESTRATOR_REPLAY_FIXTURES: ReadonlyArray<OrchestratorReplayFixtu
     buildInput: multiTurnInput,
     providers: [
       {
+        driver: ProviderDriverKind.make("copilot"),
+        transcriptFile: new URL("./multi_turn/copilot_transcript.ndjson", import.meta.url),
+        modelSelection: COPILOT_MODEL_SELECTION,
+        assertOutput: assertMuseMultiTurnOutput,
+      },
+      {
         driver: ProviderDriverKind.make("codex"),
         transcriptFile: new URL("./multi_turn/codex_transcript.ndjson", import.meta.url),
         modelSelection: CODEX_MODEL_SELECTION,
@@ -1272,6 +1303,68 @@ export const ORCHESTRATOR_REPLAY_FIXTURES: ReadonlyArray<OrchestratorReplayFixtu
         transcriptFile: new URL("./multi_turn/muse_transcript.ndjson", import.meta.url),
         modelSelection: MUSE_MODEL_SELECTION,
         assertOutput: assertMuseMultiTurnOutput,
+      },
+    ],
+  },
+  {
+    name: "copilot_background_subagent",
+    buildInput: copilotBackgroundSubagentInput,
+    providers: [
+      {
+        driver: ProviderDriverKind.make("copilot"),
+        transcriptFile: new URL(
+          "./copilot_background_subagent/copilot_transcript.ndjson",
+          import.meta.url,
+        ),
+        modelSelection: COPILOT_MODEL_SELECTION,
+        runContinuationWorker: true,
+        assertOutput: assertCopilotBackgroundSubagentOutput,
+      },
+    ],
+  },
+  {
+    name: "copilot_proposed_plan",
+    buildInput: copilotProposedPlanInput,
+    providers: [
+      {
+        driver: ProviderDriverKind.make("copilot"),
+        transcriptFile: new URL(
+          "./copilot_proposed_plan/copilot_transcript.ndjson",
+          import.meta.url,
+        ),
+        modelSelection: COPILOT_MODEL_SELECTION,
+        assertOutput: assertCopilotProposedPlanOutput,
+      },
+    ],
+  },
+  {
+    name: "copilot_tool_call_approved",
+    buildInput: copilotToolCallApprovedInput,
+    providers: [
+      {
+        driver: ProviderDriverKind.make("copilot"),
+        transcriptFile: new URL(
+          "./copilot_tool_call_approved/copilot_transcript.ndjson",
+          import.meta.url,
+        ),
+        modelSelection: COPILOT_MODEL_SELECTION,
+        assertOutput: assertToolCallReadOnlyOnRequestOutput,
+      },
+    ],
+  },
+  {
+    name: "copilot_tool_call_denied",
+    buildInput: copilotToolCallDeniedInput,
+    providers: [
+      {
+        driver: ProviderDriverKind.make("copilot"),
+        transcriptFile: new URL(
+          "./copilot_tool_call_denied/copilot_transcript.ndjson",
+          import.meta.url,
+        ),
+        modelSelection: COPILOT_MODEL_SELECTION,
+        expectedAbsentWorkspacePaths: [TOOL_CALL_DENIED_WRITE_TARGET],
+        assertOutput: assertCopilotToolCallDeniedOutput,
       },
     ],
   },
@@ -1345,6 +1438,15 @@ export const ORCHESTRATOR_REPLAY_FIXTURES: ReadonlyArray<OrchestratorReplayFixtu
     buildInput: providerThreadResumeInput,
     providers: [
       {
+        driver: ProviderDriverKind.make("copilot"),
+        transcriptFile: new URL(
+          "./provider_thread_resume/copilot_transcript.ndjson",
+          import.meta.url,
+        ),
+        modelSelection: COPILOT_MODEL_SELECTION,
+        assertOutput: assertCopilotProviderThreadResumeOutput,
+      },
+      {
         driver: ProviderDriverKind.make("pi"),
         transcriptFile: new URL("./provider_thread_resume/pi_transcript.ndjson", import.meta.url),
         modelSelection: PI_MODEL_SELECTION,
@@ -1382,6 +1484,12 @@ export const ORCHESTRATOR_REPLAY_FIXTURES: ReadonlyArray<OrchestratorReplayFixtu
     name: "queued_turn",
     buildInput: queuedTurnInput,
     providers: [
+      {
+        driver: ProviderDriverKind.make("copilot"),
+        transcriptFile: new URL("./queued_turn/copilot_transcript.ndjson", import.meta.url),
+        modelSelection: COPILOT_MODEL_SELECTION,
+        assertOutput: assertQueuedTurnOutput,
+      },
       {
         driver: ProviderDriverKind.make("codex"),
         transcriptFile: new URL("./queued_turn/codex_transcript.ndjson", import.meta.url),
@@ -1522,6 +1630,12 @@ export const ORCHESTRATOR_REPLAY_FIXTURES: ReadonlyArray<OrchestratorReplayFixtu
     buildInput: messageSteeringInput,
     providers: [
       {
+        driver: ProviderDriverKind.make("copilot"),
+        transcriptFile: new URL("./message_steering/copilot_transcript.ndjson", import.meta.url),
+        modelSelection: COPILOT_MODEL_SELECTION,
+        assertOutput: assertCopilotMessageSteeringOutput,
+      },
+      {
         driver: ProviderDriverKind.make("codex"),
         transcriptFile: new URL("./message_steering/codex_transcript.ndjson", import.meta.url),
         modelSelection: CODEX_MODEL_SELECTION,
@@ -1569,6 +1683,12 @@ export const ORCHESTRATOR_REPLAY_FIXTURES: ReadonlyArray<OrchestratorReplayFixtu
     name: "turn_interrupt",
     buildInput: turnInterruptInput,
     providers: [
+      {
+        driver: ProviderDriverKind.make("copilot"),
+        transcriptFile: new URL("./turn_interrupt/copilot_transcript.ndjson", import.meta.url),
+        modelSelection: COPILOT_MODEL_SELECTION,
+        assertOutput: assertCopilotTurnInterruptOutput,
+      },
       {
         driver: ProviderDriverKind.make("codex"),
         transcriptFile: new URL("./turn_interrupt/codex_transcript.ndjson", import.meta.url),
@@ -1731,6 +1851,12 @@ export const ORCHESTRATOR_REPLAY_FIXTURES: ReadonlyArray<OrchestratorReplayFixtu
     name: "thread_rollback",
     buildInput: threadRollbackInput,
     providers: [
+      {
+        driver: ProviderDriverKind.make("copilot"),
+        transcriptFile: new URL("./thread_rollback/copilot_transcript.ndjson", import.meta.url),
+        modelSelection: COPILOT_MODEL_SELECTION,
+        assertOutput: assertCopilotThreadRollbackOutput,
+      },
       {
         driver: ProviderDriverKind.make("codex"),
         transcriptFile: new URL("./thread_rollback/codex_transcript.ndjson", import.meta.url),
