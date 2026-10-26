@@ -318,6 +318,23 @@ it.layer(NodeServices.layer)("ManagedPolicy.load", (it) => {
           opencodePinned.summary?.limits?.providers?.lockedInstanceFields?.[opencode] ?? [],
           "config.serverUrl",
         );
+        // t3code-disconnected: hiding GitHub tokens would drop the ones a Copilot pin sets.
+        const copilot = ProviderDriverKind.make("copilot");
+        const copilotPinned = yield* ManagedPolicy.fromDocument("/test/policy.json", {
+          schemaVersion: 1,
+          organization: "Example Corp",
+          limits: {
+            providers: {
+              instances: {
+                [copilot]: { locked: true, environment: [{ name: "GH_TOKEN", value: "x" }] },
+              },
+            },
+          },
+        });
+        assert.include(
+          copilotPinned.summary?.limits?.providers?.lockedInstanceFields?.[copilot] ?? [],
+          "config.hideGitHubTokens",
+        );
         // The same override from the environment that starts the server is ignored too.
         const host = { PATH: "/usr/bin", T3CODE_CODEX_LAUNCH_ARGS: "--yolo" };
         assert.deepEqual(providerHostEnvironment((yield* policyOn("linux")).summary, host), {
