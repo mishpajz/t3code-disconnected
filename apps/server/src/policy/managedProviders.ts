@@ -16,6 +16,7 @@ import {
   type ServerSettings,
 } from "@t3tools/contracts";
 import { acpRegistryClient } from "@t3tools/provider-acp-registry/client";
+import { copilotClient } from "@t3tools/provider-copilot/client";
 import { cursorClient } from "@t3tools/provider-cursor/client";
 import { fxClient } from "@t3tools/provider-fx/client";
 import { grokClient } from "@t3tools/provider-grok/client";
@@ -43,6 +44,7 @@ const known = (
   ] as const;
 
 const PACKAGED_CLIENTS: ReadonlyArray<ProviderClientDefinition> = [
+  copilotClient,
   cursorClient,
   grokClient,
   fxClient,
@@ -65,6 +67,8 @@ const PIN_BYPASS_FIELDS: ReadonlyMap<
 > = new Map<ProviderDriverKind, Readonly<Record<string, unknown>>>([
   [ProviderDriverKind.make("codex"), { setupMode: "existing" }],
   [ProviderDriverKind.make("opencode"), { serverUrl: "" }],
+  // t3code-disconnected: hiding GitHub tokens would drop the ones a pin sets.
+  [ProviderDriverKind.make("copilot"), { hideGitHubTokens: false }],
 ]);
 
 /** Drivers this build knows, by the names users see; a policy naming any other is refused. */
