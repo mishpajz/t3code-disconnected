@@ -15,6 +15,8 @@ export const UsageProviderKind = Schema.Literals([
   "opencode",
   "antigravity",
   "pi",
+  // t3code-disconnected: GitHub Copilot provider (DISCONNECTED.md).
+  "copilot",
   "muse",
 ]);
 export type UsageProviderKind = typeof UsageProviderKind.Type;

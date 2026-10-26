@@ -36,6 +36,29 @@ Forks use Pi's CLI in the destination directory because RPC session switching re
 session's cwd. Provider switches still use portable handoff summaries.
 See the [adapter](../../packages/provider-pi/src/server/adapter.ts).
 
+GitHub Copilot runs one CLI per instance through the Copilot SDK, shared by every thread's
+session and stopped when the last session closes. A crash fails every thread on it, and the next
+session starts a new CLI. The SDK exposes no exit hook, so the adapter watches the process it
+spawned. Copilot's sign-in and sessions live in the user's `~/.copilot`, deliberately shared with
+the Copilot CLI. T3 sends only while Copilot's main loop is idle, so a turn owns every main-loop
+event until `assistant.idle`; no event names the loop it belongs to. `session.idle` also waits for
+background agents, so it only ends turns in recordings made before the adapter read
+`assistant.idle`. Background subagents outlive their turn: their events carry an `agentId` and
+update their row and child thread between turns. When one finishes, Copilot wakes its own main
+loop with a `system.notification` and a `read_agent` call but no `user.message`; the adapter holds
+those events, and a subagent's approval request, until T3 opens a continuation turn for them, and
+a user's prompt sent first takes them over. Copilot's `abort` cancels background agents too, so
+Stop uses `interruptMainTurn`, and Stop with no turn running cancels them. Where Copilot's state
+is unknown (an unconfirmed stop, a send or approval answer that may not have arrived), the
+adapter detaches the session, which ends its running work, and resumes it before the next send.
+Text generation sessions set `enableSessionStore: false` and are deleted after use: deleting a
+session alone leaves its rows in `~/.copilot/session-store.db`. Idle events are never persisted,
+but their `parentId` is the last persisted event; a turn's native ref keeps it as its fingerprint, so
+a fork from the last turn can leave out later work that is not T3's. Each fork appends a
+`session.info` to its source. Compaction reports its usage on `session.compaction_complete`, not
+as an `assistant.usage`.
+See the [adapter](../../packages/provider-copilot/src/server/adapter.ts).
+
 Antigravity separates account profiles per instance while sharing installed executables across the
 environment. It forces file-based credential storage because the native macOS keychain entry would
 otherwise be shared across instances. The launch environment removes ambient Google credentials,

@@ -1125,10 +1125,24 @@ export const layer: Layer.Layer<
             (candidate) => candidate.ordinal > sourceRun.ordinal && isActiveRun(candidate),
           );
           if (!sourceBusy) {
+            // Rolled-back turns remain in audit history but no longer exist in the provider conversation.
+            const rolledBackRunIds = new Set(
+              sourceProjection.runs
+                .filter((candidate) => candidate.status === "rolled_back")
+                .map((candidate) => candidate.id),
+            );
+            const rolledBackAttemptIds = new Set(
+              sourceProjection.attempts
+                .filter((attempt) => rolledBackRunIds.has(attempt.runId))
+                .map((attempt) => attempt.id),
+            );
             return yield* loadFromProvider(
               session.forkThread({
                 sourceProviderThread,
-                sourceProviderTurns: sourceProjection.providerTurns,
+                sourceProviderTurns: sourceProjection.providerTurns.filter(
+                  (turn) =>
+                    turn.runAttemptId === null || !rolledBackAttemptIds.has(turn.runAttemptId),
+                ),
                 targetThreadId: projection.thread.id,
                 modelSelection: run.modelSelection,
                 runtimePolicy: resolvedRuntimePolicy,

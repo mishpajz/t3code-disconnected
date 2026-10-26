@@ -36,6 +36,10 @@ variable. Pi reads `~/.pi/agent/sessions`, or the `sessions` directory under
 `PI_CODING_AGENT_DIR`. Set `PI_CODING_AGENT_SESSION_DIR` to read a different session directory.
 To include sessions saved through `--session-dir` or Pi's `sessionDir` setting, set this environment
 variable to the same directory. Pi includes recorded tool and summary costs under `Tools/summaries`.
+GitHub Copilot keeps no history T3 can read, so T3 records the tokens each Copilot turn and text
+generation uses, subagents included, under **GitHub Copilot**. Only work run in T3 counts. Costs are
+estimated from the model's list price, not Copilot's premium requests; models without a known price
+appear as unpriced.
 Muse Code reads native session history, including child sessions, from the home reported by the
 configured Muse CLI. Its environment settings, including `XDG_DATA_HOME`, apply. Models without
 known prices still contribute tokens and appear as unpriced; set custom prices to estimate their cost.
