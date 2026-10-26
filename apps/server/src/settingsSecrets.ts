@@ -12,6 +12,7 @@ import {
   secretSettingsFields,
 } from "@t3tools/contracts";
 import { acpRegistryClient } from "@t3tools/provider-acp-registry/client";
+import { copilotClient } from "@t3tools/provider-copilot/client";
 import { cursorClient } from "@t3tools/provider-cursor/client";
 import { grokClient } from "@t3tools/provider-grok/client";
 import { kiroClient } from "@t3tools/provider-kiro/client";
@@ -32,6 +33,7 @@ const providerSecretFields = new Map([
   ["claudeAgent", secretSettingsFields(ClaudeSettings)],
   ["antigravity", secretSettingsFields(AntigravitySettings)],
   ...[
+    copilotClient,
     cursorClient,
     grokClient,
     kiroClient,

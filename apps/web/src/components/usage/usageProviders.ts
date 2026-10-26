@@ -40,6 +40,12 @@ export const PROVIDER_PRESENTATION = {
     color: "#4d9f8a",
     driverKind: ProviderDriverKind.make("pi"),
   },
+  // t3code-disconnected: GitHub Copilot provider (DISCONNECTED.md).
+  copilot: {
+    label: "GitHub Copilot",
+    color: "#6e40c9",
+    driverKind: ProviderDriverKind.make("copilot"),
+  },
   muse: {
     label: "Muse Code",
     color: "#0866ff",
