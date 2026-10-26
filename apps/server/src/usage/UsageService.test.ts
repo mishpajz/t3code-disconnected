@@ -49,6 +49,7 @@ import * as ProviderHostLive from "../provider/ProviderHostLive.ts";
 import { totalTokens, type UsageRecord } from "@t3tools/provider-core/server/usage";
 import * as UsageService from "./UsageService.ts";
 import * as Disconnected from "@t3tools/shared/disconnected";
+import { layerCopilotUsageDirectory } from "@t3tools/provider-copilot/server";
 import * as MuseSdk from "../../../../packages/provider-muse/src/server/sdk.ts";
 import { MuseUsageHome } from "@t3tools/provider-muse/server";
 import { encodeScanCache, SCAN_CACHE_FILE_NAME } from "./usageScanCache.ts";
@@ -154,6 +155,7 @@ const layerService = (input: {
   layerCursorUsageAccounts(
     CursorAccountReader.layer.pipe(Layer.provide(CursorKeychain.layer)),
   ).pipe(
+    Layer.provideMerge(layerCopilotUsageDirectory),
     Layer.provideMerge(AntigravityUsage.layer),
     Layer.provideMerge(MuseUsageHome.layer),
     Layer.provideMerge(ProviderHostLive.layer),
@@ -1066,6 +1068,74 @@ describe("UsageService", () => {
           ),
         );
       }).pipe(Effect.scoped),
+  );
+
+  it.live("reads the usage T3 records for GitHub Copilot and prices it by model", () =>
+    Effect.gen(function* () {
+      const { home, settings } = yield* setup;
+      yield* Effect.gen(function* () {
+        const config = yield* ServerConfig.ServerConfig;
+        const dir = NodePath.join(config.stateDir, "copilot-usage");
+        const line = (model: string) =>
+          encodeUnknownJsonString({
+            type: "copilot_usage",
+            timestamp: "2026-08-01T10:00:00Z",
+            sessionId: "copilot-session",
+            model,
+            usage: {
+              inputTokens: 1_000,
+              outputTokens: 100,
+              cacheReadTokens: 600,
+              cacheWriteTokens: 200,
+              reasoningTokens: 40,
+            },
+          });
+        yield* Effect.promise(async () => {
+          await NodeFSP.mkdir(dir, { recursive: true });
+          await NodeFSP.writeFile(
+            NodePath.join(dir, "2026-08-01.jsonl"),
+            [line("claude-sonnet-4.6"), line("mai-code-1.1-flash")].join("\n") + "\n",
+          );
+        });
+        const service = yield* UsageService.make;
+        const summary = yield* service.readSummary(WINDOW);
+        const copilot = summary.buckets.filter((bucket) => bucket.provider === "copilot");
+        assert.strictEqual(copilot.length, 2);
+        const claude = copilot.find((bucket) => bucket.model === "claude-sonnet-4.6");
+        assert.deepStrictEqual(claude?.totals, {
+          uncachedInputTokens: 200,
+          cachedInputTokens: 600,
+          cacheCreationTokens: 200,
+          outputTokens: 100,
+          reasoningTokens: 40,
+        });
+        assert.strictEqual(claude?.costSource, "modelPriced");
+        assert.closeTo(
+          claude?.costUsd ?? NaN,
+          200 * 3e-6 + 600 * 3e-7 + 200 * 3.75e-6 + 100 * 1.5e-5,
+          1e-12,
+        );
+        const unknown = copilot.find((bucket) => bucket.model === "mai-code-1.1-flash");
+        assert.strictEqual(unknown?.costSource, "unpriced");
+      }).pipe(
+        Effect.scoped,
+        Effect.provide(
+          layerService({
+            prefix: "usage-copilot",
+            home,
+            settings,
+            ratesDocument: {
+              "claude-sonnet-4-6": {
+                input_cost_per_token: 3e-6,
+                output_cost_per_token: 1.5e-5,
+                cache_read_input_token_cost: 3e-7,
+                cache_creation_input_token_cost: 3.75e-6,
+              },
+            },
+          }),
+        ),
+      );
+    }).pipe(Effect.scoped),
   );
 
   it.live("reports missing Pi history and skips malformed records without losing valid usage", () =>
