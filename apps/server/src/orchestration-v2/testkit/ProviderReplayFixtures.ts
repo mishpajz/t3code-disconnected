@@ -30,6 +30,7 @@ const DRIVERS_WITH_REPLAY_FIXTURE_FILES = new Set([
   "acpRegistry",
   "claudeAgent",
   "codex",
+  "copilot",
   "cursor",
   "fx",
   "grok",
