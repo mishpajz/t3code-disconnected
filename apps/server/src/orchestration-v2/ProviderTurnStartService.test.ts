@@ -3,6 +3,7 @@ import { expect, it, vi } from "vite-plus/test";
 import { it as effectIt } from "@effect/vitest";
 import {
   CheckpointScopeId,
+  ContextTransferId,
   MessageId,
   NodeId,
   ProviderSessionId,
@@ -769,6 +770,81 @@ function makeLocalCommandHarness(input: {
     }).pipe(Effect.provide(layer)),
   };
 }
+
+effectIt.effect("forks a native source without the provider turns it rolled back", () =>
+  Effect.gen(function* () {
+    const harness = makeLocalCommandHarness({
+      text: "Continue",
+      previousTurn: { runStatus: "completed", turnStatus: "completed" },
+    });
+    const projection = harness.projection();
+    const sourceRun = projection.runs[0]!;
+    const keptTurn = projection.providerTurns[0]!;
+    const sourceAttempt = {
+      ...projection.attempts[0]!,
+      id: keptTurn.runAttemptId!,
+      runId: sourceRun.id,
+      status: "completed" as const,
+    };
+    const rolledBackAttemptId = RunAttemptId.make("rolled-back-attempt");
+    const rolledBackRun = {
+      ...sourceRun,
+      id: RunId.make("rolled-back-run"),
+      status: "rolled_back" as const,
+      activeAttemptId: rolledBackAttemptId,
+    };
+    const run = projection.runs[1]!;
+    harness.setProjection({
+      ...projection,
+      runs: [sourceRun, rolledBackRun, run],
+      attempts: [
+        sourceAttempt,
+        { ...sourceAttempt, id: rolledBackAttemptId, runId: rolledBackRun.id },
+        ...projection.attempts,
+      ],
+      providerTurns: [
+        keptTurn,
+        {
+          ...keptTurn,
+          id: ProviderTurnId.make("rolled-back-provider-turn"),
+          runAttemptId: rolledBackAttemptId,
+          ordinal: 2,
+        },
+      ],
+      contextTransfers: [
+        {
+          id: ContextTransferId.make("native-fork-transfer"),
+          type: "fork",
+          sourceThreadId: projection.thread.id,
+          targetThreadId: projection.thread.id,
+          sourcePoint: { threadId: projection.thread.id, runId: sourceRun.id },
+          basePoint: null,
+          sourceProviderInstanceId: null,
+          targetProviderInstanceId: null,
+          targetRunId: run.id,
+          status: "pending",
+          resolution: null,
+          createdBy: "user",
+          error: null,
+          createdAt: projection.updatedAt,
+          updatedAt: projection.updatedAt,
+          consumedAt: null,
+        },
+      ],
+    });
+    const forkThread = vi.fn(() => Effect.fail("stop after the fork input"));
+    harness.open.mockReturnValue(
+      Effect.succeed({ driver: ProviderDriverKind.make("codex"), forkThread } as never),
+    );
+
+    yield* harness.start.pipe(Effect.exit);
+
+    expect(forkThread).toHaveBeenCalledOnce();
+    expect(forkThread.mock.calls[0]).toMatchObject([
+      { sourceProviderTurns: [keptTurn], providerTurnId: keptTurn.id },
+    ]);
+  }),
+);
 
 effectIt.effect("recovers an abandoned failed turn before continuing its native conversation", () =>
   Effect.gen(function* () {
