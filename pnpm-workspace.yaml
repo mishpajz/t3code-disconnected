@@ -98,6 +98,18 @@ catalog:
   remark-rehype: 11.1.2
   unified: 11.0.5
 
+# The Copilot driver always launches the user's own Copilot CLI, so the SDK's
+# bundled per-platform CLIs (about 150 MB each) are never used.
+ignoredOptionalDependencies:
+  - "@github/copilot-sdk-darwin-arm64"
+  - "@github/copilot-sdk-darwin-x64"
+  - "@github/copilot-sdk-linux-arm64"
+  - "@github/copilot-sdk-linux-x64"
+  - "@github/copilot-sdk-linuxmusl-arm64"
+  - "@github/copilot-sdk-linuxmusl-x64"
+  - "@github/copilot-sdk-win32-arm64"
+  - "@github/copilot-sdk-win32-x64"
+
 overrides:
   # Pin every patched package, including transitive dependencies, so lockfile-free
   # release installs cannot drift past the patch. Update these with patchedDependencies.
@@ -138,6 +150,7 @@ overrides:
   # The dbus-next patch drops usocket from the package, but pnpm resolves from the
   # registry manifest, so the edge has to be cut here as well.
   "dbus-next>usocket": "-"
+  "@github/copilot-sdk>vscode-jsonrpc": 8.2.1
   # The SDK always receives the user's Claude executable, so its bundled binaries are unused.
   "@anthropic-ai/claude-agent-sdk>@anthropic-ai/claude-agent-sdk-darwin-arm64": "-"
   "@anthropic-ai/claude-agent-sdk>@anthropic-ai/claude-agent-sdk-darwin-x64": "-"
@@ -254,6 +267,9 @@ patchedDependencies:
   expo-modules-core@58.0.30: patches/expo-modules-core@58.0.30.patch
   # Observe the owned host exit independently of descendants retaining its stdio.
   "@muse-code/sdk@1.4.6": patches/@muse-code__sdk@1.4.6.patch
+  # A failed request write also rethrows from an async executor nothing awaits; the request
+  # already rejects, and that detached rejection exits the server when a CLI dies mid-write.
+  vscode-jsonrpc@8.2.1: patches/vscode-jsonrpc@8.2.1.patch
   app-builder-lib@26.16.1: patches/app-builder-lib@26.16.1.patch
   # A failed Artifacts.cached effect hangs every later caller: https://github.com/alchemy-run/alchemy/issues/2981
   alchemy@2.0.0-beta.85: patches/alchemy@2.0.0-beta.85.patch
