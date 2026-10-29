@@ -78,6 +78,7 @@ function startClientAppearance(): void {
       } else {
         root.style.removeProperty("--glass-blur");
       }
+      root.toggleAttribute("data-glass-off", settings.glassOpacity === 100);
     }
     if (
       previous?.fontFamilySans !== settings.fontFamilySans ||
