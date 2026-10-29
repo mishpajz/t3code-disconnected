@@ -1819,6 +1819,15 @@ code {
   --pele-critical: var(--destructive);
 }
 
+/* Opaque glass: drop every backdrop filter, including fixed blurs and saturate(),
+   since each one forces a backdrop re-render on repaint (costly on Windows). */
+:root[data-glass-off] *,
+:root[data-glass-off] *::before,
+:root[data-glass-off] *::after {
+  -webkit-backdrop-filter: none !important;
+  backdrop-filter: none !important;
+}
+
 /* Window drag region (frameless titlebar) */
 .drag-region {
   -webkit-app-region: drag;
