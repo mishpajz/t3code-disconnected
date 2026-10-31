@@ -10,6 +10,21 @@ Before the first run, on every machine:
 - On workers: the `t3` command (**Settings → General → t3 command** in the desktop app), and
   the tunnel itself (`devtunnel create worker-1`, `devtunnel port create worker-1 -p 4771`).
 
+## Install or update the desktop app
+
+```powershell
+.\install.ps1 [-Tag disconnected-0.1.6-1] [-Force] [-NoLaunch]
+```
+
+Downloads the newest `disconnected-*` release from GitHub, installs it for the current user
+without prompts, and starts the app. It does nothing if that version is already installed,
+unless you pass `-Force`. Installing closes a running copy of the app first, including
+the agent sessions it is running. To run the script without cloning the repo:
+
+```powershell
+& ([scriptblock]::Create((irm https://raw.githubusercontent.com/mishpajz/t3code-disconnected/main/dev-tunnels/install.ps1)))
+```
+
 ## Workers
 
 ```powershell
