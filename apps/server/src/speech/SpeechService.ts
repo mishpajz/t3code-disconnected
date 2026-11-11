@@ -7,6 +7,7 @@ import {
   type SpeechModelUnloadTimeout,
   type SpeechTranscriptionOptions,
 } from "@t3tools/contracts";
+import { RUNTIME_DOWNLOADS_ENABLED } from "@t3tools/shared/disconnected";
 import * as HostProcess from "@t3tools/shared/HostProcess";
 import * as Cause from "effect/Cause";
 import * as Clock from "effect/Clock";
@@ -288,6 +289,10 @@ const make = Effect.gen(function* () {
     purpose: "installation" | "recording",
   ) {
     if (purpose === "recording" && now() < silenceRetryAt) return undefined;
+    // t3code-disconnected: recording uses an installed Silero model and never downloads one
+    // from Hugging Face; only the user's own model Download fetches it (DISCONNECTED.md).
+    if (purpose === "recording" && !RUNTIME_DOWNLOADS_ENABLED)
+      return yield* store.installedPath(SILERO_VAD);
     const path = yield* store.download(SILERO_VAD).pipe(
       Effect.timeout(purpose === "recording" ? "15 seconds" : "2 minutes"),
       Effect.orElseSucceed(() => undefined),

@@ -38,9 +38,12 @@ in. Fork patches are marked with a `t3code-disconnected:` comment; tests that co
 enabled behaviour are skipped or force the gate on.
 
 Upstream's [managed policy](./docs/user/managed-policy.md) works as upstream has it and reads
-the same policy locations. It can only restrict further: a policy that allows T3 Connect, usage
-data or updates does not turn them back on. Admins who also run upstream builds can still set
-`connect`, `telemetry` and `updates.mode` to cover those.
+the same policy locations. It cannot turn back on anything a gate switches off: a policy that
+allows T3 Connect, usage data or updates does not re-enable them. It can still lock settings the
+fork only defaults off, such as `enableProviderUpdateChecks`. A policy that keeps clients local
+does not remove Tailscale Serve routes, since the fork never runs `tailscale`; remove them
+yourself. Admins who also run upstream builds can still set `connect`, `telemetry` and
+`updates.mode` to cover those.
 
 ## Non-goals
 
@@ -57,6 +60,9 @@ data or updates does not turn them back on. Admins who also run upstream builds 
   provider-supplied logos load too; favicons for links come from Google's favicon service
   (`packages/shared/src/favicon.ts`). Azure DevOps links use the bundled Azure DevOps icon
   instead, so your organization's host is not sent to Google.
+- **Model APIs you configure.** Text generators and cloud dictation send requests to the
+  OpenAI, Anthropic, OpenRouter or xAI endpoint you set up, and opening OpenRouter's dictation
+  settings lists its models.
 - **Hosted web app and mobile app.** See [Scope](#scope). The mobile app also depends on
   T3 Connect for push notifications.
 
@@ -140,6 +146,10 @@ data or updates does not turn them back on. Admins who also run upstream builds 
 - [x] **GitHub star prompt**: after a few prompts, upstream checks on `api.github.com` whether
       your GitHub account starred `pingdotgg/t3code` and then asks for a star. Neither runs
       (`GITHUB_STAR_PROMPT_ENABLED`, `apps/web/src/components/GitHubStarPrompt.tsx`).
+- [x] **Speech model downloads**: recording no longer downloads the Silero voice activity model
+      from Hugging Face when it is missing; it uses an installed copy or raw audio. Downloading a
+      model in **Settings** still fetches it, since you start that yourself
+      (`RUNTIME_DOWNLOADS_ENABLED`, `apps/server/src/speech/SpeechService.ts`).
 - [x] **Cloud VM check**: a background service with no `T3CODE_HOST` no longer connects to the
       cloud metadata address `169.254.169.254` to decide whether to hide its LAN addresses, so
       it always lists them (`CLOUD_METADATA_PROBE_ENABLED`,
@@ -163,8 +173,8 @@ Providers the fork adds on top of upstream's. They run only the CLI the user con
       executable, so the SDK's bundled CLIs are never used: pnpm skips them
       (`ignoredOptionalDependencies`) and desktop packaging excludes them. Copilot's built-in
       GitHub MCP server and session telemetry are turned off in its sessions. A managed policy
-      names it `copilot`; a policy that pins its instance also holds **Hide GitHub tokens** off,
-      so the tokens it pins reach Copilot. Usage prices
+      names it `copilot`; a policy that locks its instance pin, or pins it under a runtime-mode
+      ceiling, also holds **Hide GitHub tokens** off, so the tokens it pins reach Copilot. Usage prices
       Copilot's dotted Claude versions at the dashed rates, so the bundled rates include
       `claude-sonnet-4-5` (`packages/provider-copilot`,
       [user guide](./docs/user/providers-copilot.md)).
