@@ -19,6 +19,14 @@ import * as SpeechModelStore from "./SpeechModelStore.ts";
 import * as SpeechService from "./SpeechService.ts";
 import { SILERO_VAD } from "./silero.ts";
 
+// t3code-disconnected: these tests cover upstream's recording-time download, so they turn it on.
+const disconnectedGate = vi.hoisted(() => ({ runtimeDownloadsEnabled: true }));
+vi.mock("@t3tools/shared/disconnected", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("@t3tools/shared/disconnected")>()),
+  get RUNTIME_DOWNLOADS_ENABLED() {
+    return disconnectedGate.runtimeDownloadsEnabled;
+  },
+}));
 const native = vi.hoisted(() => ({
   backend: "Vulkan0",
   supportsStreaming: true,
@@ -126,6 +134,7 @@ beforeEach(() => {
   native.supportsVocabulary = false;
   native.supportsStreaming = true;
   native.languages = ["en", "fr"];
+  disconnectedGate.runtimeDownloadsEnabled = true;
   readyModels.clear();
   readyModels.add("test-model");
   readyModels.add("fallback-model");
@@ -385,6 +394,24 @@ it.effect("bounds missing Silero recovery during recording and continues with ra
     yield* stream.feed(pcm());
     expect(yield* stream.finish).toBe("hello");
   }).pipe(Effect.scoped, Effect.provide(layer)),
+);
+
+it.effect("recording never downloads Silero when runtime downloads are disabled", () =>
+  Effect.gen(function* () {
+    disconnectedGate.runtimeDownloadsEnabled = false;
+    const speech = yield* SpeechService.SpeechService;
+    const record = Effect.scoped(
+      speech
+        .startStream(DEFAULT_SPEECH_TRANSCRIPTION_OPTIONS)
+        .pipe(Effect.flatMap((stream) => stream.finish)),
+    );
+    expect(yield* record).toBe("hello");
+    expect(native.begin).toHaveBeenLastCalledWith(expect.anything(), true, undefined);
+    readyModels.add(SILERO_VAD.id);
+    expect(yield* record).toBe("hello");
+    expect(native.begin).toHaveBeenLastCalledWith(expect.anything(), true, "test.gguf");
+    expect(download).not.toHaveBeenCalled();
+  }).pipe(Effect.provide(layer)),
 );
 
 it.effect("keeps the installed speech model usable when optional Silero acquisition fails", () =>
