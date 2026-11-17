@@ -43,7 +43,23 @@ allows T3 Connect, usage data or updates does not re-enable them. It can still l
 fork only defaults off, such as `enableProviderUpdateChecks`. A policy that keeps clients local
 does not remove Tailscale Serve routes, since the fork never runs `tailscale`; remove them
 yourself. Admins who also run upstream builds can still set `connect`, `telemetry` and
-`updates.mode` to cover those.
+`updates.mode` to cover those. To also lock provider update checks off, deploy a policy such
+as this at `C:\Program Files\T3Code\policy.json` (or the `HKLM\SOFTWARE\Policies\T3Tools\T3Code`
+key). Leave out `limits.clients` on workers that accept Dev Tunnel connections, since a policy
+without `remote` keeps the server on loopback and revokes remote pairings.
+
+```json
+{
+  "schemaVersion": 1,
+  "organization": "Example Corp",
+  "settings": { "enableProviderUpdateChecks": { "value": false, "locked": true } },
+  "limits": {
+    "connect": false,
+    "telemetry": false,
+    "updates": { "mode": "off", "allowNightly": false }
+  }
+}
+```
 
 ## Non-goals
 
@@ -133,8 +149,10 @@ yourself. Admins who also run upstream builds can still set `connect`, `telemetr
       (`THEME_MARKETPLACE_ENABLED`, `apps/web/src/openVsxThemes.ts`).
 - [x] **Prompt links** to app.t3.codes: the **Copy prompt link** button on messages and the
       command palette's copy prompt link actions are hidden, since opening such a link sends
-      the prompt to T3's hosted app (`PROMPT_LINKS_ENABLED`,
-      `apps/web/src/components/promptLinks/copyPromptLink.ts`).
+      the prompt to T3's hosted app. Pairing links for HTTPS endpoints point at the server
+      itself instead of app.t3.codes, which would receive the endpoint (`PROMPT_LINKS_ENABLED`,
+      `apps/web/src/components/promptLinks/copyPromptLink.ts`,
+      `apps/web/src/components/settings/pairingUrls.ts`).
 - [x] **Triage downloads**: opening a triage draft no longer looks up and clones upstream's
       source from GitHub in the background, and the triage playbook no longer tells the agent
       to fetch a newer copy of itself; the agent asks before cloning the source, like any other
@@ -146,6 +164,10 @@ yourself. Admins who also run upstream builds can still set `connect`, `telemetr
 - [x] **GitHub star prompt**: after a few prompts, upstream checks on `api.github.com` whether
       your GitHub account starred `pingdotgg/t3code` and then asks for a star. Neither runs
       (`GITHUB_STAR_PROMPT_ENABLED`, `apps/web/src/components/GitHubStarPrompt.tsx`).
+- [x] **Codex runtime upgrades at startup**: a T3-managed Codex install older than the build's
+      pinned release is no longer downloaded over on startup; it keeps running until you update
+      it from **Settings** (`RUNTIME_DOWNLOADS_ENABLED`,
+      `apps/server/src/provider/CodexInstallation.ts`).
 - [x] **Speech model downloads**: recording no longer downloads the Silero voice activity model
       from Hugging Face when it is missing; it uses an installed copy or raw audio. Downloading a
       model in **Settings** still fetches it, since you start that yourself
@@ -238,7 +260,8 @@ git rebase upstream/main
 `upstream` is fetch-only in this clone (`git remote set-url --push upstream no-push`).
 
 The list of outbound calls above comes from an audit of upstream at commit
-[`bb7783e`](https://github.com/pingdotgg/t3code/commit/bb7783e295506ad423f527ed28a019836e331e8c); the fork itself started from a slightly newer `main`.
+[`bb7783e`](https://github.com/pingdotgg/t3code/commit/bb7783e295506ad423f527ed28a019836e331e8c); the fork itself started from a slightly newer `main`. It was re-audited after rebasing onto
+upstream `v0.1.10`.
 After each rebase, run `egress-check/check.sh` and `node egress-check/source-check.mjs`
 and review anything new.
 

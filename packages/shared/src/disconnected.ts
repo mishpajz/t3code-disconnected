@@ -33,7 +33,7 @@ export const BITBUCKET_ENABLED = !DISCONNECTED;
 /** Theme marketplace backed by open-vsx.org. */
 export const THEME_MARKETPLACE_ENABLED = !DISCONNECTED;
 
-/** Copying links that open a prompt on T3's hosted app (app.t3.codes). */
+/** Copying links to T3's hosted app (app.t3.codes): prompt links and hosted pairing links. */
 export const PROMPT_LINKS_ENABLED = !DISCONNECTED;
 
 /** Triage cloning upstream's source when a draft opens, and its agent fetching a newer playbook. */
