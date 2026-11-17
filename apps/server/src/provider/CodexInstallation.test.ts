@@ -4,6 +4,7 @@ import * as Layer from "effect/Layer";
 import * as ModelManifest from "./ModelManifest.ts";
 import { expect, it } from "@effect/vitest";
 import * as HostProcess from "@t3tools/shared/HostProcess";
+import { RUNTIME_DOWNLOADS_ENABLED } from "@t3tools/shared/disconnected";
 import * as Digest from "effect/crypto/Digest";
 import * as Deferred from "effect/Deferred";
 import * as Effect from "effect/Effect";
@@ -435,6 +436,13 @@ it.effect("updates an older supported managed installation to the pinned release
       '{"version":"0.156.0"}',
     );
     const restarted = yield* makeHarness({ baseDir: first.baseDir });
+    // t3code-disconnected: startup keeps the older runtime instead of downloading (DISCONNECTED.md).
+    if (!RUNTIME_DOWNLOADS_ENABLED) {
+      expect((yield* restarted.installation.state).operationId).toBeNull();
+      expect((yield* restarted.installation.resolve()).version).toBe("0.156.0");
+      expect(restarted.downloads()).toBe(0);
+      return;
+    }
     expect((yield* restarted.installation.state).operationId).not.toBeNull();
     expect((yield* terminalState(restarted.installation)).phase).toBe("succeeded");
     expect((yield* restarted.installation.resolve()).version).toBe("0.156.1");
