@@ -1,5 +1,7 @@
 import { afterEach, describe, expect, it, vi } from "vite-plus/test";
 
+import { PROMPT_LINKS_ENABLED } from "@t3tools/shared/disconnected";
+
 import { resolveDesktopPairingUrl, resolveHostedPairingUrl } from "./pairingUrls";
 
 describe("settings pairing URL helpers", () => {
@@ -14,7 +16,16 @@ describe("settings pairing URL helpers", () => {
     );
   });
 
-  it("uses hosted pairing URLs for HTTPS endpoints", () => {
+  // t3code-disconnected: hosted pairing links are off (DISCONNECTED.md).
+  it.skipIf(PROMPT_LINKS_ENABLED)("uses no hosted pairing URL for HTTPS endpoints", () => {
+    vi.stubEnv("VITE_HOSTED_APP_URL", "https://preview.t3.codes");
+
+    expect(
+      resolveHostedPairingUrl("https://host.tailnet.example.ts.net:3773", "PAIRCODE"),
+    ).toBeNull();
+  });
+
+  it.skipIf(!PROMPT_LINKS_ENABLED)("uses hosted pairing URLs for HTTPS endpoints", () => {
     vi.stubEnv("VITE_HOSTED_APP_URL", "https://preview.t3.codes");
 
     expect(resolveHostedPairingUrl("https://host.tailnet.example.ts.net:3773", "PAIRCODE")).toBe(
