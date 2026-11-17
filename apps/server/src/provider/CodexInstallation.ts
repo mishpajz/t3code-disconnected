@@ -1,4 +1,5 @@
 // @effect-diagnostics nodeBuiltinImport:off - Effect has no incremental digest.
+import { RUNTIME_DOWNLOADS_ENABLED } from "@t3tools/shared/disconnected";
 import {
   ProviderDriverKind,
   type ProviderInstallState,
@@ -977,7 +978,12 @@ export const makeCodexInstallation = Effect.fn("makeCodexInstallation")(function
         }) satisfies ProviderInstallState,
     );
     // A supported older runtime still resolves, so a raised pin needs its own update.
-    if (asset && compareSemverVersions(installed.version, asset.version) < 0)
+    // t3code-disconnected: no download the user did not start (DISCONNECTED.md).
+    if (
+      RUNTIME_DOWNLOADS_ENABLED &&
+      asset &&
+      compareSemverVersions(installed.version, asset.version) < 0
+    )
       yield* start.pipe(Effect.ignore);
   }).pipe(
     Effect.catch(() =>
