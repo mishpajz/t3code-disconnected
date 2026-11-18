@@ -6,7 +6,8 @@ the machine hosting your environment, through Copilot's own SDK. It is disabled 
 ## Set up Copilot
 
 Install the Copilot CLI on the host and run `copilot login` as the account that runs T3 Code.
-Open **Settings → Providers**, select the environment, and enable **GitHub Copilot**. Set
+T3 Code needs Copilot CLI 1.0.113 or newer; an older CLI fails to start with an SDK protocol
+version mismatch, so update it with `copilot update` or your package manager. Open **Settings → Providers**, select the environment, and enable **GitHub Copilot**. Set
 **Binary path** if `copilot` is not on the host's `PATH`, then refresh provider status. The
 status shows the signed-in GitHub account.
 
