@@ -1001,7 +1001,7 @@ export const DESKTOP_FILE_EXCLUSIONS = [
   // The installed Claude CLI is supplied explicitly; exclude optional bundled executables, retaining SDK JavaScript.
   "!**/node_modules/@anthropic-ai/claude-agent-sdk-*/**/*",
   // Likewise the user's Copilot CLI; the SDK's per-platform CLIs are never launched.
-  "!**/node_modules/@github/copilot-sdk-*/**/*",
+  "!**/node_modules/@microsoft/copilot-sdk-*/**/*",
   "!**/*.map",
   "!**/*.d.cts",
   "!apps/desktop/resources/browser-secret",
@@ -1054,8 +1054,8 @@ export const WINDOWS_SERVER_ASAR_IGNORE_GLOBS = [
   "**/node_modules/@cursor/sdk-*/**",
   "**/node_modules/@anthropic-ai/claude-agent-sdk-*",
   "**/node_modules/@anthropic-ai/claude-agent-sdk-*/**",
-  "**/node_modules/@github/copilot-sdk-*",
-  "**/node_modules/@github/copilot-sdk-*/**",
+  "**/node_modules/@microsoft/copilot-sdk-*",
+  "**/node_modules/@microsoft/copilot-sdk-*/**",
   "**/node_modules/.bin",
   "**/node_modules/.bin/**",
   "**/*.map",
