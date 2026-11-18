@@ -1,4 +1,4 @@
-import { CopilotClient, RuntimeConnection } from "@github/copilot-sdk";
+import { CopilotClient, RuntimeConnection } from "@microsoft/copilot-sdk";
 
 import type { CopilotLaunch } from "./server/sdk.ts";
 
@@ -19,13 +19,14 @@ export async function deleteCopilotSessions(
 ): Promise<void> {
   if (sessionIds.length === 0) return;
   const client = new CopilotClient({
-    connection: RuntimeConnection.forStdio({
+    mode: "coding-agent",
+    runtime: RuntimeConnection.forSpawnedStdio({
       path: launch.command,
       args: [...launch.args],
       env: launch.env,
+      workingDirectory: launch.cwd,
     }),
-    workingDirectory: launch.cwd,
-    logLevel: "error",
+    observability: { logLevel: "error" },
   });
   await client.start();
   try {
