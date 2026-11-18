@@ -9,9 +9,9 @@ import {
   type MCPHTTPServerConfig,
   type PermissionHandler,
   type PermissionRequestResult,
-  type SessionConfig,
+  type CreateSessionOptions,
   type SessionEvent,
-} from "@github/copilot-sdk";
+} from "@microsoft/copilot-sdk";
 import * as NodeChildProcess from "node:child_process";
 import * as NodeFSP from "node:fs/promises";
 import * as NodePath from "node:path";
@@ -24,14 +24,14 @@ import * as Schema from "effect/Schema";
 
 export type CopilotPermissionRequest = Parameters<PermissionHandler>[0];
 export type CopilotPermissionResult = PermissionRequestResult;
-export type CopilotUserInputRequest = Parameters<
-  NonNullable<SessionConfig["onUserInputRequest"]>
->[0];
-export type CopilotUserInputResponse = Awaited<
-  ReturnType<NonNullable<SessionConfig["onUserInputRequest"]>>
+type CopilotUserInputHandler = NonNullable<
+  NonNullable<CreateSessionOptions["interaction"]>["onUserInputRequest"]
 >;
-export type CopilotReasoningEffort = NonNullable<SessionConfig["reasoningEffort"]>;
-export type CopilotContextTier = NonNullable<SessionConfig["contextTier"]>;
+export type CopilotUserInputRequest = Parameters<CopilotUserInputHandler>[0];
+export type CopilotUserInputResponse = Awaited<ReturnType<CopilotUserInputHandler>>;
+type CopilotInferenceOptions = NonNullable<CreateSessionOptions["inference"]>;
+export type CopilotReasoningEffort = NonNullable<CopilotInferenceOptions["reasoningEffort"]>;
+export type CopilotContextTier = NonNullable<CopilotInferenceOptions["contextTier"]>;
 export type CopilotRewindResult = Awaited<ReturnType<CopilotSession["rpc"]["history"]["rewind"]>>;
 export type CopilotTodoRow = Awaited<
   ReturnType<CopilotSession["rpc"]["plan"]["readSqlTodos"]>
@@ -277,32 +277,44 @@ function sessionConfig(
   };
   return {
     ...(options.model ? { model: options.model } : {}),
-    ...(options.reasoningEffort ? { reasoningEffort: options.reasoningEffort } : {}),
-    ...(options.contextTier ? { contextTier: options.contextTier } : {}),
+    inference: {
+      ...(options.reasoningEffort ? { reasoningEffort: options.reasoningEffort } : {}),
+      ...(options.contextTier ? { contextTier: options.contextTier } : {}),
+    },
     workingDirectory: options.workingDirectory,
-    streaming: true,
     // Repository and personal skills and custom agents load only with discovery, as in the CLI.
     enableConfigDiscovery: true,
-    // Subagent messages and tools still arrive whole; only their deltas stay out.
-    includeSubAgentStreamingEvents: false,
-    enableSessionTelemetry: false,
-    disabledMcpServers: DISABLED_MCP_SERVERS,
-    mcpServers: options.mcpServers,
+    github: { telemetryEnabled: false },
+    mcp: { disabledServers: DISABLED_MCP_SERVERS, servers: options.mcpServers },
     ...(options.compactionThreshold === undefined
       ? {}
-      : { infiniteSessions: { backgroundCompactionThreshold: options.compactionThreshold } }),
+      : {
+          state: {
+            infiniteSessions: { backgroundCompactionThreshold: options.compactionThreshold },
+          },
+        }),
     systemMessage: { mode: "append" as const, content: options.instructions },
-    onEvent: (event: SessionEvent) => {
-      if (event.type === "permission.requested" && !event.data.resolvedByHook && isOpen())
-        void answerPermission(event.data.requestId, event.data.permissionRequest, event.agentId);
-      if (COPILOT_FORWARDED_EVENT_TYPES.has(event.type)) handlers.onEvent(event);
+    events: {
+      streaming: true,
+      // Subagent messages and tools still arrive whole; only their deltas stay out.
+      includeSubAgentStreamingEvents: false,
+      onEvent: (event: SessionEvent) => {
+        if (event.type === "permission.requested" && !event.data.resolvedByHook && isOpen())
+          void answerPermission(event.data.requestId, event.data.permissionRequest, event.agentId);
+        if (COPILOT_FORWARDED_EVENT_TYPES.has(event.type)) handlers.onEvent(event);
+      },
     },
-    onPermissionRequest: (request: CopilotPermissionRequest): CopilotPermissionResult =>
-      isOpen() ? { kind: "no-result" } : handlers.onPermissionRequestWhileOpening(request),
-    onUserInputRequest: (request: CopilotUserInputRequest) => handlers.onUserInputRequest(request),
-    onExitPlanModeRequest: (request: ExitPlanModeRequest) =>
-      handlers.onExitPlanModeRequest(request),
-  } satisfies SessionConfig;
+    permissions: {
+      onRequest: (request: CopilotPermissionRequest): CopilotPermissionResult =>
+        isOpen() ? { kind: "no-result" } : handlers.onPermissionRequestWhileOpening(request),
+    },
+    interaction: {
+      onUserInputRequest: (request: CopilotUserInputRequest) =>
+        handlers.onUserInputRequest(request),
+      onExitPlanModeRequest: (request: ExitPlanModeRequest) =>
+        handlers.onExitPlanModeRequest(request),
+    },
+  } satisfies CreateSessionOptions;
 }
 
 export function wrapCopilotSession(session: CopilotSession): CopilotSdkSession {
@@ -361,7 +373,7 @@ export function wrapCopilotSession(session: CopilotSession): CopilotSdkSession {
 }
 
 export async function openCopilotSession(
-  open: (config: SessionConfig) => Promise<CopilotSession>,
+  open: (config: CreateSessionOptions) => Promise<CopilotSession>,
   options: CopilotSessionOptions,
   handlers: CopilotSessionHandlers,
 ) {
@@ -435,27 +447,33 @@ export async function createCopilotTextSession(
   const session = await client.createSession({
     sessionId: options.sessionId,
     model: options.model,
-    ...(options.reasoningEffort ? { reasoningEffort: options.reasoningEffort } : {}),
+    ...(options.reasoningEffort ? { inference: { reasoningEffort: options.reasoningEffort } } : {}),
     workingDirectory: options.workingDirectory,
-    streaming: false,
-    enableSessionTelemetry: false,
-    enableSessionStore: false,
-    enableSkills: false,
-    enableFileHooks: false,
-    disabledMcpServers: DISABLED_MCP_SERVERS,
-    availableTools: options.builtInTools.map((name) => `builtin:${name}`),
-    excludedTools: ["custom:*", "mcp:*"],
+    github: { telemetryEnabled: false },
+    state: { enableCrossSessionStore: false },
+    skills: { enabled: false },
+    hooks: { enableRepositoryHooks: false },
+    mcp: { disabledServers: DISABLED_MCP_SERVERS },
+    tools: {
+      availableTools: options.builtInTools.map((name) => `builtin:${name}`),
+      excludedTools: ["custom:*", "mcp:*"],
+    },
     systemMessage: { mode: "replace", content: options.instructions },
-    // Copilot asks before reading an untrusted folder, and nobody is there to answer.
-    onPermissionRequest: async (request) =>
-      request.kind === "read" && (await isReadInside(checkout, request, platform))
-        ? { kind: "approve-once" }
-        : { kind: "reject" },
-    onUserInputRequest: () => ({ answer: "", wasFreeform: true }),
-    onEvent: (event) => {
-      if (event.agentId) return;
-      events.push(event);
-      if (event.type === "session.idle") idle();
+    permissions: {
+      // Copilot asks before reading an untrusted folder, and nobody is there to answer.
+      onRequest: async (request) =>
+        request.kind === "read" && (await isReadInside(checkout, request, platform))
+          ? { kind: "approve-once" }
+          : { kind: "reject" },
+    },
+    interaction: { onUserInputRequest: () => ({ answer: "", wasFreeform: true }) },
+    events: {
+      streaming: false,
+      onEvent: (event) => {
+        if (event.agentId) return;
+        events.push(event);
+        if (event.type === "session.idle") idle();
+      },
     },
   });
   return {
@@ -570,13 +588,14 @@ export const makeCopilotSdkFactory =
     const { signal, onCleanupError = () => {} } = control;
     if (signal?.aborted) throw new Error("Copilot CLI start was cancelled");
     const client = new CopilotClient({
-      connection: RuntimeConnection.forStdio({
+      mode: "coding-agent",
+      runtime: RuntimeConnection.forSpawnedStdio({
         path: launch.command,
         args: [...launch.args],
         env: launch.env,
+        workingDirectory: launch.cwd,
       }),
-      workingDirectory: launch.cwd,
-      logLevel: "error",
+      observability: { logLevel: "error" },
     });
     let child: CliProcess | undefined;
     onCliSpawn(client, (spawned) => {
@@ -606,7 +625,8 @@ export const makeCopilotSdkFactory =
     } catch (error) {
       stopping = true;
       await client.forceStop().catch(onCleanupError);
-      throw error;
+      // The SDK's own start can reject first once the cancel kills the CLI.
+      throw signal?.aborted ? new Error("Copilot CLI start was cancelled") : error;
     } finally {
       signal?.removeEventListener("abort", onAbort);
     }
@@ -625,7 +645,8 @@ export const makeCopilotSdkFactory =
       createSession: (options, handlers) =>
         // Trusted for good, as answering the CLI's folder trust prompt does, so resumes keep it.
         openCopilotSession(
-          (config) => client.createSession({ ...config, trustWorkingDirectory: "user" }),
+          (config) =>
+            client.createSession({ ...config, filesystem: { trustWorkingDirectory: "user" } }),
           options,
           handlers,
         ),

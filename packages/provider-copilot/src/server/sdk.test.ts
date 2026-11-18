@@ -1,5 +1,9 @@
 // @effect-diagnostics nodeBuiltinImport:off -- Read approvals resolve real symlinks in a temporary checkout.
-import { CopilotClient, type CopilotSession, type SessionConfig } from "@github/copilot-sdk";
+import {
+  CopilotClient,
+  type CopilotSession,
+  type CreateSessionOptions,
+} from "@microsoft/copilot-sdk";
 import { assert, describe, expect, it } from "@effect/vitest";
 import * as HostProcess from "@t3tools/shared/HostProcess";
 import { SpawnExecutableResolution } from "@t3tools/shared/shell";
@@ -91,7 +95,7 @@ describe("Copilot SDK session", () => {
       answered.shift()?.(params);
       return { success: true };
     });
-    let config: SessionConfig | undefined;
+    let config: CreateSessionOptions | undefined;
     const onPermissionRequest = vi.fn(async (): Promise<CopilotPermissionResult> => ({
       kind: "approve-once",
     }));
@@ -113,20 +117,20 @@ describe("Copilot SDK session", () => {
     );
     const request = { kind: "url", url: "https://example.com" } as CopilotPermissionRequest;
     // The SDK's own answer is suppressed so the event path can answer with the id.
-    assert.deepEqual(await config!.onPermissionRequest!(request, { sessionId: "native-1" }), {
+    assert.deepEqual(await config!.permissions!.onRequest!(request, { sessionId: "native-1" }), {
       kind: "no-result",
     });
-    config!.onEvent!({
+    config!.events!.onEvent!({
       type: "permission.requested",
       data: { requestId: "request-7", permissionRequest: request },
-    } as Parameters<NonNullable<SessionConfig["onEvent"]>>[0]);
+    } as Parameters<NonNullable<NonNullable<CreateSessionOptions["events"]>["onEvent"]>>[0]);
     assert.deepEqual(await answer, { requestId: "request-7", result: { kind: "approve-once" } });
     const subagentAnswer = nextAnswer();
-    config!.onEvent!({
+    config!.events!.onEvent!({
       type: "permission.requested",
       agentId: "agent-1",
       data: { requestId: "request-8", permissionRequest: request },
-    } as Parameters<NonNullable<SessionConfig["onEvent"]>>[0]);
+    } as Parameters<NonNullable<NonNullable<CreateSessionOptions["events"]>["onEvent"]>>[0]);
     await subagentAnswer;
     assert.deepEqual(onPermissionRequest.mock.calls, [
       [request, "request-7", undefined],
@@ -147,11 +151,11 @@ describe("Copilot SDK session", () => {
     // Like session.create, opening settles only once the extension's request is answered.
     await openCopilotSession(
       async (config) => {
-        config.onEvent!({
+        config.events!.onEvent!({
           type: "permission.requested",
           data: { requestId: "request-1", permissionRequest: request },
-        } as Parameters<NonNullable<SessionConfig["onEvent"]>>[0]);
-        const answer = await config.onPermissionRequest!(request, { sessionId: "native-1" });
+        } as Parameters<NonNullable<NonNullable<CreateSessionOptions["events"]>["onEvent"]>>[0]);
+        const answer = await config.permissions!.onRequest!(request, { sessionId: "native-1" });
         assert.deepEqual(answer, { kind: "approve-once" });
         return fakeSession({ permissions: { handlePendingPermissionRequest } });
       },
@@ -174,7 +178,7 @@ describe("Copilot SDK session", () => {
     const failure = new Promise((resolve) => {
       failed = resolve;
     });
-    let config: SessionConfig | undefined;
+    let config: CreateSessionOptions | undefined;
     await openCopilotSession(
       async (next) => {
         config = next;
@@ -196,10 +200,10 @@ describe("Copilot SDK session", () => {
         onPermissionDeliveryFailed: (requestId, cause) => failed([requestId, cause]),
       },
     );
-    config!.onEvent!({
+    config!.events!.onEvent!({
       type: "permission.requested",
       data: { requestId: "request-7", permissionRequest: { kind: "url", url: "https://x" } },
-    } as Parameters<NonNullable<SessionConfig["onEvent"]>>[0]);
+    } as Parameters<NonNullable<NonNullable<CreateSessionOptions["events"]>["onEvent"]>>[0]);
     const [requestId, cause] = (await failure) as [string, Error];
     assert.equal(requestId, "request-7");
     assert.equal(cause.message, "connection closed");
@@ -224,8 +228,8 @@ setInterval(() => {}, 1000);
 
 describe("Copilot text session", () => {
   const textSession = async (workingDirectory: string) => {
-    let config: SessionConfig | undefined;
-    const createSession = vi.fn(async (next: SessionConfig) => {
+    let config: CreateSessionOptions | undefined;
+    const createSession = vi.fn(async (next: CreateSessionOptions) => {
       config = next;
       return fakeSession({});
     });
@@ -241,17 +245,17 @@ describe("Copilot text session", () => {
       NodePath.sep === "\\" ? "win32" : "linux",
     );
     const answer = (request: Record<string, unknown>) =>
-      config!.onPermissionRequest!(request as never, { sessionId: "text-1" });
+      config!.permissions!.onRequest!(request as never, { sessionId: "text-1" });
     return { config: config!, answer };
   };
 
   it("offers only Copilot's own tools, no hooks, under the session id it chose", async () => {
     const { config } = await textSession("/workspace/repo");
     assert.equal(config.sessionId, "text-1");
-    assert.deepEqual(config.availableTools, ["builtin:view", "builtin:grep"]);
-    assert.deepEqual(config.excludedTools, ["custom:*", "mcp:*"]);
-    assert.isFalse(config.enableFileHooks);
-    assert.isFalse(config.enableSessionStore);
+    assert.deepEqual(config.tools?.availableTools, ["builtin:view", "builtin:grep"]);
+    assert.deepEqual(config.tools?.excludedTools, ["custom:*", "mcp:*"]);
+    assert.isFalse(config.hooks?.enableRepositoryHooks);
+    assert.isFalse(config.state?.enableCrossSessionStore);
   });
 
   it("approves reads only of files that resolve inside the checkout", async () => {
