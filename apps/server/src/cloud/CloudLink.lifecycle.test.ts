@@ -1,6 +1,7 @@
 import * as NodeCrypto from "@effect/platform-node/NodeCrypto";
 import * as NodeServices from "@effect/platform-node/NodeServices";
 import { describe, expect, it } from "@effect/vitest";
+import { vi } from "vite-plus/test";
 import * as ConfigProvider from "effect/ConfigProvider";
 import * as Effect from "effect/Effect";
 import * as FileSystem from "effect/FileSystem";
@@ -53,6 +54,12 @@ import { managedTunnelStartupAction } from "./managedTunnelStartup.ts";
 import * as ManagedEndpointRuntime from "./ManagedEndpointRuntime.ts";
 import * as ManagedPolicy from "../policy/ManagedPolicy.ts";
 import * as ServerSettings from "../serverSettings.ts";
+
+// t3code-disconnected: these tests cover upstream's T3 Connect behaviour, so they turn it on.
+vi.mock("@t3tools/shared/disconnected", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("@t3tools/shared/disconnected")>()),
+  T3_CONNECT_ENABLED: true,
+}));
 
 const storeFailure = (tag: "AlreadyExists" | "PermissionDenied") =>
   new ServerSecretStore.SecretStorePersistError({

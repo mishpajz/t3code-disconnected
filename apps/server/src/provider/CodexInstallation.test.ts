@@ -520,7 +520,11 @@ it.effect(
     }).pipe(Effect.scoped, Effect.provide(Layer.mergeAll(NodeServices.layer, NodeCrypto.layer))),
 );
 
-it.effect.each(["cached update", "reverify"] as const)(
+// t3code-disconnected: a cached update only starts at startup, which the fork turns off (DISCONNECTED.md).
+it.effect.each([
+  ...(RUNTIME_DOWNLOADS_ENABLED ? ["cached update" as const] : []),
+  "reverify",
+] as const)(
   "reports a verification timeout during %s and preserves the managed runtime",
   (operation) =>
     Effect.gen(function* () {
