@@ -1,5 +1,5 @@
 import { thrownErrorMessage } from "@t3tools/client-runtime/errors";
-import { RUNTIME_DOWNLOADS_ENABLED } from "@t3tools/shared/disconnected";
+import { NPM_RELEASE_CHECK_ENABLED, RUNTIME_DOWNLOADS_ENABLED } from "@t3tools/shared/disconnected";
 import { useAtomValue } from "@effect/atom-react";
 import {
   AuthEnvironmentMaintainScope,
@@ -86,9 +86,19 @@ function refusedCrossing(
 }
 
 function CrossTrackNote() {
+  // t3code-disconnected: About has no Update track switch without npm release lookups.
+  if (!NPM_RELEASE_CHECK_ENABLED) return <ManualInstallNote />;
   return (
     <span className="text-muted-foreground text-xs">
       <T>Switch tracks in About → Update track</T>
+    </span>
+  );
+}
+
+function ManualInstallNote() {
+  return (
+    <span className="text-muted-foreground text-xs">
+      <T>Install the matching T3 Code build on that machine to update this server.</T>
     </span>
   );
 }
@@ -397,11 +407,7 @@ export function ServerUpdateAction({
 
   // t3code-disconnected: the copied npm/npx commands would install upstream t3 from npm.
   if (selfUpdate === null && !RUNTIME_DOWNLOADS_ENABLED) {
-    return (
-      <span className="text-muted-foreground text-xs">
-        Install the matching T3 Code build on that machine to update this server.
-      </span>
-    );
+    return <ManualInstallNote />;
   }
 
   if (refusedCrossing({ selfUpdate, targetVersion, channel }, serverVersion)) {

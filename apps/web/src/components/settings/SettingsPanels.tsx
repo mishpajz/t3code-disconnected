@@ -2591,7 +2591,9 @@ export function AboutSettingsPanel() {
             !ANALYTICS_ENABLED
               ? gt("How upstream T3 Code handles your data. This build collects no usage data.")
               : telemetryOff === undefined
-                ? gt("How we handle your data, including the anonymous usage data T3 Code collects.")
+                ? gt(
+                    "How we handle your data, including the anonymous usage data T3 Code collects.",
+                  )
                 : gt("How we handle your data. {telemetryOff}", { telemetryOff })
           }
           control={

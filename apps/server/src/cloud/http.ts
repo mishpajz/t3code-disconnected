@@ -210,6 +210,7 @@ const layerDisabled = HttpApiBuilder.group(
         ),
       )
       .handle("preferences", () => connectDisabled)
+      .handle("liveActivityPreference", () => connectDisabled)
       .handle("health", () => connectDisabled)
       .handle("t3MintCredential", () => connectDisabled);
   }),

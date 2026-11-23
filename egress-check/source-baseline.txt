@@ -2,6 +2,7 @@
 # term and file per line; see egress-check/README.md.
 1.1.1.1	apps/server/src/cloud/ConnectReachability.ts
 a.dev	packages/client-runtime/src/secretRequest.ts
+accounts.google.com	apps/server/src/provider/Drivers/AntigravityDriver.ts
 accounts.google.com	apps/server/src/provider/antigravityAuthSupport.ts
 accounts.google.com	apps/server/src/provider/antigravityCallback.ts
 accounts.x.ai	packages/provider-grok/src/server/usageLimits.ts
@@ -9,6 +10,7 @@ agentclientprotocol.com	packages/effect-acp/src/_generated/schema-v1.gen.ts
 agentclientprotocol.com	packages/effect-acp/src/_generated/schema.gen.ts
 agentclientprotocol.com	packages/provider-acp/src/server/adapter.ts
 antigravity-cli-auto-updater-974169037036.us-central1.run.app	apps/server/src/provider/antigravityCliRelease.ts
+antigravity.google	apps/server/src/provider/antigravityAuthSupport.ts
 api.anthropic.com	apps/server/src/provider/claudeResetCredits.ts
 api.anthropic.com	apps/server/src/usage/cliproxyApi.ts
 api.anthropic.com	apps/web/src/textGenerators.ts
@@ -21,6 +23,7 @@ api.github.com	apps/server/src/usage/UsageService.ts
 api.github.com	packages/shared/src/cliRelease.ts
 api.github.com	packages/source-control-github/src/server/GitHubRequestPolicy.ts
 api.github.com	packages/source-control-github/src/server/gitHubPullRequestEvents.ts
+api.linear.app	packages/issue-tracker-linear/src/server/LinearApi.ts
 api.meta.ai	packages/provider-muse/src/server/maintenance.ts
 api.openai.com	apps/server/src/provider/CodexChatGptAuth.ts
 api.openai.com	apps/server/src/provider/CodexChatGptModels.ts
@@ -50,6 +53,7 @@ claude.ai	apps/web/src/components/mcp/mcpApps.ts
 claude.ai	apps/web/src/onboarding/providerReadiness.logic.ts
 claude.com	apps/web/src/components/mcp/mcpApps.ts
 cli-chat-proxy.grok.com	packages/provider-grok/src/server/usageLimits.ts
+cli.github.com	packages/client-runtime/src/contractLabels.ts
 cli.github.com	packages/source-control-github/src/server/GitHubPullRequestProvider.ts
 cli.github.com	packages/source-control-github/src/server/GitHubSourceControlProvider.ts
 cloudcode-pa.googleapis.com	apps/server/src/provider/antigravityUsageLimits.ts
@@ -64,6 +68,7 @@ cloudflared	apps/server/src/triage/triagePrompt.ts
 cloudflared	packages/contracts/src/environmentHttp.ts
 cloudflared	packages/shared/src/disconnected.ts
 cloudflared	packages/shared/src/relayClient.ts
+codeberg.org	packages/client-runtime/src/contractLabels.ts
 codeberg.org	packages/source-control-forgejo/src/server/ForgejoPullRequestProvider.ts
 codeberg.org	packages/source-control-forgejo/src/server/ForgejoSourceControlProvider.ts
 coss.com	apps/web/components.json
@@ -78,13 +83,27 @@ docs.github.com	packages/source-control-github/graphql.config.ts
 docs.openclaw.ai	apps/web/src/components/mcp/mcpApps.ts
 docs.x.ai	apps/web/src/components/mcp/mcpApps.ts
 downloads.claude.ai	apps/server/src/provider/Drivers/ClaudeMaintenance.ts
+downloads.cursor.com	packages/client-runtime/src/contractLabels.ts
 downloads.cursor.com	packages/source-control-cursor-origin/src/server/OriginSourceControlProvider.ts
 duckduckgo.com	packages/shared/src/preview.ts
 gateway.example.ts.net	apps/web/src/components/settings/SimlockDeviceHostEditor.tsx
 gateway.example.ts.net	apps/web/src/components/settings/simlockDeviceHostsSettings.logic.ts
+gateway.example.ts.net	apps/web/src/i18n/translations/de.json
+gateway.example.ts.net	apps/web/src/i18n/translations/en.json
+gateway.example.ts.net	apps/web/src/i18n/translations/es.json
+gateway.example.ts.net	apps/web/src/i18n/translations/fr.json
+gateway.example.ts.net	apps/web/src/i18n/translations/ja.json
+gateway.example.ts.net	apps/web/src/i18n/translations/ko.json
+gateway.example.ts.net	apps/web/src/i18n/translations/pt-BR.json
+gateway.example.ts.net	apps/web/src/i18n/translations/ru.json
+gateway.example.ts.net	apps/web/src/i18n/translations/sv.json
+gateway.example.ts.net	apps/web/src/i18n/translations/zh.json
 gateway.example.ts.net	packages/contracts/src/device.ts
 gemini.google.com	apps/web/src/components/mcp/mcpApps.ts
 git-scm.com	apps/server/src/sourceControl/SourceControlDiscovery.ts
+git-scm.com	packages/client-runtime/src/contractLabels.ts
+git.cafe	packages/client-runtime/src/contractLabels.ts
+gitea.com	packages/client-runtime/src/contractLabels.ts
 gitea.com	packages/source-control-forgejo/src/server/ForgejoPullRequestProvider.ts
 gitea.com	packages/source-control-forgejo/src/server/ForgejoSourceControlProvider.ts
 github.com	apps/desktop/gnome-extension/metadata.json
@@ -105,7 +124,9 @@ github.com	apps/web/src/components/promptLinks/NewThreadLinkView.tsx
 github.com	apps/web/src/components/settings/MultipleAccountsNote.tsx
 github.com	apps/web/src/lib/bootError.ts
 github.com	apps/web/src/lib/softwareKeyboard.ts
+github.com	packages/client-runtime/src/contractLabels.ts
 github.com	packages/contracts/src/environmentHttp.ts
+github.com	packages/issue-tracker-linear/graphql.config.ts
 github.com	packages/shared/src/cliRelease.ts
 github.com	packages/shared/src/promptLinks.ts
 github.com	packages/shared/src/relayClient.ts
@@ -114,6 +135,7 @@ github.com	packages/source-control-github/src/shared/definition.ts
 github.com	packages/source-control-github/src/shared/gitHubMedia.ts
 github.com	scripts/npm-launcher/t3.mjs
 github.githubassets.com	packages/shared/src/favicon.ts
+gitlab.com	packages/client-runtime/src/contractLabels.ts
 gitlab.com	packages/source-control-gitlab/src/server/GitLabPullRequestProvider.ts
 gitlab.com	packages/source-control-gitlab/src/server/GitLabSourceControlProvider.ts
 googlechromelabs.github.io	apps/server/src/preview/PreviewBrowser.ts
@@ -126,6 +148,8 @@ ingest.t3.codes	apps/server/src/telemetry/AnalyticsService.ts
 json-schema.org	packages/shared/src/t3ProjectFile.ts
 kagi.com	packages/shared/src/preview.ts
 latest.app.t3.codes	apps/web/vercel.ts
+linear.app	packages/issue-tracker-linear/src/server/LinearIssueTracker.ts
+linear.app	packages/issue-tracker-linear/src/shared/issueUrl.ts
 login.tailscale.com	apps/server/src/cli/pair.ts
 login.tailscale.com	packages/tailscale/src/tailscale.ts
 machine.tailnet.ts.net	apps/web/src/components/chat/LinkRequestCard.tsx
@@ -150,6 +174,7 @@ raw.githubusercontent.com	apps/server/src/usage/usageBundledRates.ts
 registry.npmjs.org	apps/server/src/cloud/npmRelease.ts
 registry.npmjs.org	apps/server/src/provider/CodexInstallation.ts
 registry.npmjs.org	packages/provider-core/src/server/maintenanceResolver.ts
+releases.fx.sh	packages/provider-fx/src/server/maintenance.ts
 releases.openai.com	apps/server/src/provider/Drivers/CodexDriver.ts
 schemas.microsoft.com	apps/server/src/cloud/bootService.ts
 schemas.microsoft.com	apps/server/src/policy/policyTemplates.ts
@@ -194,7 +219,6 @@ tailscale	apps/server/src/environment/RemoteOpenTargets.ts
 tailscale	apps/server/src/httpResponseErrorGuard.ts
 tailscale	apps/server/src/peer/PeerLinks.ts
 tailscale	apps/server/src/policy/managedLimits.ts
-tailscale	apps/server/src/process/agentScope.ts
 tailscale	apps/server/src/requestUrl.ts
 tailscale	apps/server/src/server.ts
 tailscale	apps/web/src/components/chat/LinkRequestCard.tsx
@@ -204,6 +228,17 @@ tailscale	apps/web/src/components/settings/ConnectionsSettings.logic.ts
 tailscale	apps/web/src/components/settings/ConnectionsSettings.tsx
 tailscale	apps/web/src/components/settings/LinkedEnvironmentsSettings.tsx
 tailscale	apps/web/src/components/settings/settingsSearch.ts
+tailscale	apps/web/src/i18n/translations/de.json
+tailscale	apps/web/src/i18n/translations/en.json
+tailscale	apps/web/src/i18n/translations/es.json
+tailscale	apps/web/src/i18n/translations/fr.json
+tailscale	apps/web/src/i18n/translations/ja.json
+tailscale	apps/web/src/i18n/translations/ko.json
+tailscale	apps/web/src/i18n/translations/pt-BR.json
+tailscale	apps/web/src/i18n/translations/ru.json
+tailscale	apps/web/src/i18n/translations/sv.json
+tailscale	apps/web/src/i18n/translations/zh.json
+tailscale	apps/web/src/state/portForwards.ts
 tailscale	apps/web/vite.config.ts
 tailscale	packages/client-runtime/src/connection/catalog.ts
 tailscale	packages/client-runtime/src/connection/diagnosis.ts
