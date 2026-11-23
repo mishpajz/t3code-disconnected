@@ -65,15 +65,17 @@ without `remote` keeps the server on loopback and revokes remote pairings.
 
 - **Agents and their vendors.** The coding agents you run (Copilot CLI, Claude, Codex and so
   on) talk to their own services. This fork does not change that; use the ones you are
-  allowed to use.
-- **Git hosting and source-control integrations.** These talk to the hosts you configure
-  (for example Azure DevOps through `az`). They stay, except Bitbucket, which contacts
+  allowed to use. That includes the usage and quota lookups T3 Code makes for a provider you
+  turned on and signed in to, with that provider's own sign-in (for example Claude's reset
+  credits on `api.anthropic.com` and Antigravity's quotas on `googleapis.com`).
+- **Git hosting, issue trackers and source-control integrations.** These talk to the hosts
+  you configure (for example Azure DevOps through `az`, or Linear once you add its API key). They stay, except Bitbucket, which contacts
   `api.bitbucket.org` on its own and is not needed here.
 - **The built-in browser.** It can still download Chrome on first use and browse wherever
   you or an agent navigate.
-- **Web content in chat and pull requests.** Images, audio and video embedded in messages or
-  pull request descriptions load like any page you browse. Link and tool favicons and
-  provider-supplied logos load too; favicons for links come from Google's favicon service
+- **Web content in chat, pull requests and issues.** Images, audio and video embedded in
+  messages and in pull request and issue descriptions load like any page you browse, as do
+  their authors' avatars. Link and tool favicons and provider-supplied logos load too; favicons for links come from Google's favicon service
   (`packages/shared/src/favicon.ts`). Azure DevOps links use the bundled Azure DevOps icon
   instead, so your organization's host is not sent to Google.
 - **Model APIs you configure.** Text generators and cloud dictation send requests to the
@@ -88,7 +90,7 @@ without `remote` keeps the server on loopback and revokes remote pairings.
 
 - [x] **T3 Connect.** The cloud relay, account linking, managed endpoints, agent-activity
       publishing, held-webhook wake-ups and guest links, whose setting and share actions are
-      hidden (`apps/server/src/cloud`, `apps/server/src/relay`,
+      hidden, as is the relay admin permission when creating a pairing link (`apps/server/src/cloud`, `apps/server/src/relay`,
       `packages/client-runtime/src/relay`, `apps/web/src/components/chat/guestShareAvailability.ts`).
 - [x] **cloudflared.** Downloaded and run only for T3 Connect (`packages/shared/src/relayClient.ts`).
 - [x] **Clerk sign-in.** Only used by T3 Connect (`apps/web/src/components/clerk`,
@@ -261,7 +263,7 @@ git rebase upstream/main
 
 The list of outbound calls above comes from an audit of upstream at commit
 [`bb7783e`](https://github.com/pingdotgg/t3code/commit/bb7783e295506ad423f527ed28a019836e331e8c); the fork itself started from a slightly newer `main`. It was re-audited after rebasing onto
-upstream `v0.1.10`.
+upstream `v0.1.10` and `v0.1.11`.
 After each rebase, run `egress-check/check.sh` and `node egress-check/source-check.mjs`
 and review anything new.
 

@@ -2,6 +2,7 @@ import { thrownErrorMessage } from "@t3tools/client-runtime/errors";
 import { m as resolveMessage } from "~/i18n/messages";
 import { managedCapabilityDenial } from "@t3tools/client-runtime/contract-labels";
 import { AUTH_SCOPE_OPTIONS as PAIRING_SCOPE_OPTIONS } from "@t3tools/shared/authScopeOptions";
+import { T3_CONNECT_ENABLED } from "@t3tools/shared/disconnected";
 import { PlugIcon, PlusIcon, QrCodeIcon } from "lucide-react";
 import { type ReactNode, memo, useId, useState } from "react";
 import { T, useGT, useMessages } from "gt-react";
@@ -618,7 +619,11 @@ export const AuthorizedClientsHeaderAction = memo(function AuthorizedClientsHead
   const [pairingScopes, setPairingScopes] = useState<ReadonlyArray<AuthGrantScope>>([
     ...AuthStandardClientScopes,
   ]);
-  const selectedScopes = pairingScopes.filter((scope) => delegatableScopes.includes(scope));
+  // t3code-disconnected: T3 Connect is disabled, so its relay admin scope is never offered (DISCONNECTED.md).
+  const offeredScopes = delegatableScopes.filter(
+    (scope) => T3_CONNECT_ENABLED || scope !== AuthRelayConfigureScope,
+  );
+  const selectedScopes = pairingScopes.filter((scope) => offeredScopes.includes(scope));
   const terminalSelected = selectedScopes.includes(AuthTerminalOperateScope);
   const relayAdminSelected = selectedScopes.includes(AuthRelayConfigureScope);
   const [isCreatingPairingLink, setIsCreatingPairingLink] = useState(false);
@@ -778,7 +783,7 @@ export const AuthorizedClientsHeaderAction = memo(function AuthorizedClientsHead
                 </div>
               </div>
               <div className="divide-y divide-border/60 rounded-lg border border-input bg-muted/25">
-                {PAIRING_SCOPE_OPTIONS.filter(({ scope }) => delegatableScopes.includes(scope)).map(
+                {PAIRING_SCOPE_OPTIONS.filter(({ scope }) => offeredScopes.includes(scope)).map(
                   ({ scope, title, description }) => (
                     <label
                       key={scope}

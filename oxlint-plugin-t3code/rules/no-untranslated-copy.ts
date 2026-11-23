@@ -128,6 +128,8 @@ const PROPER_NOUNS = [
   "Kiro",
   "Pi",
   "Muse Code",
+  // t3code-disconnected: the fork's GitHub Copilot provider (DISCONNECTED.md).
+  "Copilot",
   "OpenAI",
   "OpenRouter",
   "Anthropic",
