@@ -51,6 +51,7 @@ import { PRIVACY_POLICY_URL } from "../../legalLinks";
 import { workspaceAreaProps } from "../../lib/workspaceFocus";
 import { retryClerkLoad, useClerkLoadFailed } from "../clerk/clerkLoadFailure";
 import { useT3ConnectAuthPrompt } from "../clerk/useT3ConnectAuthPrompt";
+import { ACP_REGISTRY_ENABLED, ANALYTICS_ENABLED } from "@t3tools/shared/disconnected";
 import { completeOnboarding } from "../../onboarding/firstRun";
 import {
   groupOnboardingProjects,
@@ -335,7 +336,8 @@ export function WelcomePage({
                 </Button>
               </div>
             </div>
-            <TelemetryNotice environmentId={environmentId} />
+            {/* t3code-disconnected: this build collects no usage data (DISCONNECTED.md). */}
+            {ANALYTICS_ENABLED ? <TelemetryNotice environmentId={environmentId} /> : null}
           </div>
         </div>
       </div>
@@ -477,7 +479,10 @@ function AgentsSection({
   // status can be wrong, so this waits for the checks, and a later check never closes it.
   if (moreOpen === null && !checking && found.length === 0) setMoreOpen(true);
   const showMore = moreOpen ?? false;
-  const acpAllowed = isManagedDriverAllowed(serverConfig?.managedPolicy, ACP_REGISTRY_DRIVER_KIND);
+  // t3code-disconnected: the ACP Registry is disabled, so Welcome offers no registry browsing.
+  const acpAllowed =
+    ACP_REGISTRY_ENABLED &&
+    isManagedDriverAllowed(serverConfig?.managedPolicy, ACP_REGISTRY_DRIVER_KIND);
   const stateOf = (provider: ServerProvider) => welcomeAgentState(provider, serverConfig?.settings);
   const needsInstallOrSignIn = (provider: ServerProvider) => {
     const state = stateOf(provider);
