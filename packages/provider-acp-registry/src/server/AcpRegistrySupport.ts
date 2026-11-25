@@ -1151,6 +1151,8 @@ export const makeAcpRegistryCatalog = Effect.fn("AcpRegistryCatalog.make")(funct
   const refreshIndex: AcpRegistryCatalog["Service"]["refreshIndex"] = Effect.fn(
     "AcpRegistryCatalog.refreshIndex",
   )(function* (options) {
+    // t3code-disconnected: provider health refreshes must not fetch the registry (DISCONNECTED.md).
+    if (!ACP_REGISTRY_ENABLED) return false;
     const result =
       options?.maxAgeMs === undefined
         ? yield* refreshRegistry(

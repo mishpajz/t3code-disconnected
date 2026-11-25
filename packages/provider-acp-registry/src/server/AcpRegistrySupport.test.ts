@@ -200,6 +200,7 @@ describe("AcpRegistrySupport", () => {
             makeRegistry(makeAgent(distribution)),
           );
           expect(yield* resolver.search({ query: "" })).toEqual({ agents: [] });
+          expect(yield* resolver.refreshIndex()).toBe(false);
           for (const error of [
             yield* resolver.prepare({ agentId: "example-agent" }).pipe(Effect.flip),
             yield* resolver.inspect(settings()).pipe(Effect.flip),

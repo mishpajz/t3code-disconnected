@@ -241,6 +241,35 @@ it.effect("keeps a daemon record its missing agent CLI cannot stop", () =>
   }),
 );
 
+it.effect("t3code-disconnected: asks for a manual install instead of running npm", () =>
+  Effect.gen(function* () {
+    if ((yield* HostProcess.Platform) === "win32") return;
+    yield* Effect.promise(async () => {
+      const home = await NodeFSP.mkdtemp(NodePath.join(NodeOS.tmpdir(), "t3-ssh-npm-"));
+      try {
+        const calls = NodePath.join(home, "npm-calls");
+        await executable(NodePath.join(home, "bin/npm"), `echo "$@" >> ${quoteRemoteArg(calls)}`);
+        await completeSdk(NodePath.join(home, "sdk"));
+        const started = NodeChildProcess.spawnSync(process.execPath, [], {
+          input: remoteDeviceScript("owner", "start"),
+          env: {
+            HOME: home,
+            PATH: `${NodePath.join(home, "bin")}:/usr/bin:/bin`,
+            ANDROID_HOME: NodePath.join(home, "sdk"),
+          },
+          encoding: "utf8",
+        });
+        expect(started.stderr).toContain(
+          `expo-device-hub ${DEVICE_HUB_VERSION} is not installed on this host`,
+        );
+        await expect(NodeFSP.access(calls)).rejects.toThrow();
+      } finally {
+        await NodeFSP.rm(home, { recursive: true, force: true });
+      }
+    });
+  }),
+);
+
 it.effect("starts the hub requiring a session token and reports the one it printed", () =>
   Effect.gen(function* () {
     if ((yield* HostProcess.Platform) === "win32") return;

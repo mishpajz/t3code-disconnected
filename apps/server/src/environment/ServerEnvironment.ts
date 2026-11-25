@@ -5,6 +5,7 @@ import {
   type ExecutionEnvironmentDescriptor,
 } from "@t3tools/contracts";
 import * as HostProcess from "@t3tools/shared/HostProcess";
+import { ANALYTICS_ENABLED } from "@t3tools/shared/disconnected";
 import * as Context from "effect/Context";
 import * as SecureRandom from "effect/crypto/SecureRandom";
 import * as Effect from "effect/Effect";
@@ -306,7 +307,8 @@ export const make = Effect.gen(function* () {
       mcpHostedApproval: true,
       shellThreadFamilies: true,
       shellOlderSettled: true,
-      agentFeedback: true,
+      // t3code-disconnected: feedback reports are only delivered through analytics (DISCONNECTED.md).
+      agentFeedback: ANALYTICS_ENABLED,
     },
   };
 

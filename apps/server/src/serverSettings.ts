@@ -44,6 +44,7 @@ import * as Scope from "effect/Scope";
 import * as Stream from "effect/Stream";
 import * as SqlClient from "effect/sql/SqlClient";
 import { writeFileStringAtomically } from "@t3tools/shared/atomicWrite";
+import { ANALYTICS_ENABLED } from "@t3tools/shared/disconnected";
 import { resolveSymlinkTarget } from "@t3tools/shared/symlink";
 import * as ServerConfig from "./config.ts";
 import { type DeepPartial, deepMerge } from "@t3tools/shared/Struct";
@@ -737,7 +738,12 @@ const make = Effect.gen(function* () {
   // Locks are laid over every settings value that leaves this service, never persisted.
   const toEffective = (settings: ServerSettings) =>
     resolveTextGenerationProvider(
-      managedProviders.applyLimits(managed.applyLocks(settings)),
+      managedProviders.applyLimits(
+        managed.applyLocks(
+          // t3code-disconnected: feedback reports only reach T3 through analytics, which is off.
+          ANALYTICS_ENABLED ? settings : { ...settings, agentFeedback: { mode: "off" } },
+        ),
+      ),
       managedProviders.isDriverAllowed,
     );
   const writeSemaphore = yield* Semaphore.make(1);

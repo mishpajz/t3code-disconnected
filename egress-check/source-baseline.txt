@@ -29,7 +29,6 @@ api.openai.com	apps/server/src/provider/CodexChatGptAuth.ts
 api.openai.com	apps/server/src/provider/CodexChatGptModels.ts
 api.openai.com	apps/server/src/provider/CodexManagedRuntime.ts
 api.openai.com	apps/server/src/speech/CloudSpeech.ts
-api.openai.com	apps/server/src/telemetry/Identify.ts
 api.openai.com	apps/web/src/textGenerators.ts
 api.x.ai	apps/server/src/speech/CloudSpeech.ts
 api2.cursor.sh	packages/provider-cursor/src/server/apiKey.ts
@@ -122,6 +121,7 @@ github.com	apps/web/src/components/GitHubStarPrompt.tsx
 github.com	apps/web/src/components/desktopUpdate.logic.ts
 github.com	apps/web/src/components/promptLinks/NewThreadLinkView.tsx
 github.com	apps/web/src/components/settings/MultipleAccountsNote.tsx
+github.com	apps/web/src/components/workflows/WorkflowRunsView.tsx
 github.com	apps/web/src/lib/bootError.ts
 github.com	apps/web/src/lib/softwareKeyboard.ts
 github.com	packages/client-runtime/src/contractLabels.ts
@@ -167,6 +167,7 @@ platform.claude.com	packages/provider-core/src/server/handoffBudget.ts
 platform.openai.com	packages/effect-codex-app-server/src/_generated/schema.gen.ts
 play.google.com	apps/web/src/components/settings/MobileAppSettingsRow.tsx
 poke.com	apps/web/src/components/mcp/mcpApps.ts
+purl.oclc.org	apps/server/src/provider/documentTextWorker.ts
 raw.githubusercontent.com	apps/server/src/provider/ModelManifest.ts
 raw.githubusercontent.com	apps/server/src/triage/triagePrompt.ts
 raw.githubusercontent.com	apps/server/src/usage/UsageService.ts
@@ -178,8 +179,10 @@ releases.fx.sh	packages/provider-fx/src/server/maintenance.ts
 releases.openai.com	apps/server/src/provider/Drivers/CodexDriver.ts
 schemas.microsoft.com	apps/server/src/cloud/bootService.ts
 schemas.microsoft.com	apps/server/src/policy/policyTemplates.ts
+schemas.openxmlformats.org	apps/server/src/provider/documentTextWorker.ts
 schemas.openxmlformats.org	apps/web/src/components/files/officeArchive.ts
 search.brave.com	packages/shared/src/preview.ts
+source.tanstack.com	packages/client-runtime/src/contractLabels.ts
 spell.sh	apps/web/components.json
 storage.googleapis.com	apps/server/src/preview/PreviewBrowser.ts
 storage.googleapis.com	apps/server/src/provider/antigravityCliRelease.ts
@@ -222,11 +225,14 @@ tailscale	apps/server/src/policy/managedLimits.ts
 tailscale	apps/server/src/requestUrl.ts
 tailscale	apps/server/src/server.ts
 tailscale	apps/web/src/components/chat/LinkRequestCard.tsx
+tailscale	apps/web/src/components/chat/LinkedThreadPane.tsx
 tailscale	apps/web/src/components/cloud/TunnelUsage.tsx
 tailscale	apps/web/src/components/settings/AddEnvironmentDialog.tsx
 tailscale	apps/web/src/components/settings/ConnectionsSettings.logic.ts
 tailscale	apps/web/src/components/settings/ConnectionsSettings.tsx
+tailscale	apps/web/src/components/settings/EnvironmentsMap.tsx
 tailscale	apps/web/src/components/settings/LinkedEnvironmentsSettings.tsx
+tailscale	apps/web/src/components/settings/environmentsMap.logic.ts
 tailscale	apps/web/src/components/settings/settingsSearch.ts
 tailscale	apps/web/src/i18n/translations/de.json
 tailscale	apps/web/src/i18n/translations/en.json
@@ -252,6 +258,7 @@ tailscale	packages/contracts/src/peerLink.ts
 tailscale	packages/contracts/src/server.ts
 tailscale	packages/shared/src/disconnected.ts
 tailscale	packages/shared/src/hostClassification.ts
+tailscale	packages/shared/src/relayTracing.ts
 tailscale	packages/tailscale/package.json
 tailscale	packages/tailscale/src/index.ts
 tailscale	packages/tailscale/src/tailscale.ts
@@ -291,6 +298,7 @@ www.w3.org	apps/web/src/components/ui/checkbox.tsx
 www.w3.org	apps/web/src/components/ui/menu.tsx
 www.w3.org	apps/web/src/components/ui/qr-code.tsx
 www.w3.org	apps/web/src/contextMenuFallback.ts
+www.w3.org	apps/web/src/editorMenuIcons.tsx
 www.w3.org	apps/web/src/index.css
 www.w3.org	apps/web/src/pierre-icons.ts
 x.ai	apps/web/src/components/mcp/mcpApps.ts

@@ -473,6 +473,7 @@ describe("DirectEndpoints Tailscale Serve", () => {
           Layer.provide(
             Layer.mergeAll(
               layerServeConfig(),
+              NodeFileSystem.layer,
               Layer.succeed(
                 ChildProcessSpawner.ChildProcessSpawner,
                 ChildProcessSpawner.make(() => Effect.die("unexpected tailscale process")),
