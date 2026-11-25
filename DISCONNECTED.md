@@ -114,8 +114,8 @@ without `remote` keeps the server on loopback and revokes remote pairings.
 ### Turned off by default
 
 - [x] **Product analytics** (PostHog at `ingest.t3.codes`): forced off by
-      `ANALYTICS_ENABLED`, even with `T3CODE_TELEMETRY_ENABLED=true`; **Settings → About** no
-      longer says usage data is collected. **Agent feedback**, which sends agents' reports to
+      `ANALYTICS_ENABLED`, even with `T3CODE_TELEMETRY_ENABLED=true`; **Settings → About** and the
+      Welcome page no longer say usage data is collected. **Agent feedback**, which sends agents' reports to
       the T3 team through analytics, is hidden from **Settings → Labs** and stays off even when
       a saved setting turns it on, so agents get no feedback tool or instructions
       (`apps/server/src/telemetry/AnalyticsService.ts`, `apps/server/src/serverSettings.ts`,
@@ -154,7 +154,7 @@ without `remote` keeps the server on loopback and revokes remote pairings.
       `apps/server/src/usage/usageBundledRates.ts`). Price overrides and provider-reported
       costs still apply.
 - [x] **ACP registry**: local ACP commands only, no registry index (not even in background
-      provider checks), package downloads or CDN icons (`ACP_REGISTRY_ENABLED`, `packages/provider-acp-registry`,
+      provider checks), browsing from the Welcome page, package downloads or CDN icons (`ACP_REGISTRY_ENABLED`, `packages/provider-acp-registry`,
       `apps/web/src/components/settings/AcpRegistryIcon.tsx`).
 - [x] **Theme marketplace** (open-vsx.org): hidden; importing theme files still works
       (`THEME_MARKETPLACE_ENABLED`, `apps/web/src/openVsxThemes.ts`).
