@@ -1,4 +1,5 @@
 import { deviceToolMaintenanceScript } from "./deviceToolMaintenance.ts";
+import { RUNTIME_DOWNLOADS_ENABLED } from "@t3tools/shared/disconnected";
 import { AGENT_DEVICE_VERSION, DEVICE_HUB_VERSION } from "./DeviceToolchain.ts";
 
 export const quoteRemoteArg = (value: string) => `'${value.replaceAll("'", "'\"'\"'")}'`;
@@ -28,6 +29,7 @@ const owner = ${JSON.stringify(owner)};
 const mode = ${JSON.stringify(mode)};
 const hubVersion = ${JSON.stringify(DEVICE_HUB_VERSION)};
 const agentVersion = ${JSON.stringify(AGENT_DEVICE_VERSION)};
+const downloadsEnabled = ${JSON.stringify(RUNTIME_DOWNLOADS_ENABLED)};
 ` +
   deviceToolMaintenanceScript +
   String.raw`
@@ -112,6 +114,8 @@ async function install(name, version, entry) {
   const file = path.join(dir, 'node_modules', name, entry);
   const complete = () => fs.existsSync(file) && fs.existsSync(path.join(dir, '.install-complete')) && fs.readFileSync(path.join(dir, '.install-complete'), 'utf8').trim() === version;
   if (complete()) return file;
+  // t3code-disconnected: no npm downloads the user did not start (DISCONNECTED.md).
+  if (!downloadsEnabled) throw Error(name + ' ' + version + ' is not installed on this host. Install it yourself: npm install --prefix "' + dir + '" ' + name + '@' + version + ', then write ' + version + ' to "' + path.join(dir, '.install-complete') + '".');
   fs.mkdirSync(path.dirname(dir), { recursive: true });
   const lock = dir + '.lock';
   const release = await acquireLock(lock, complete);

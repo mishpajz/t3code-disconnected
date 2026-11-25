@@ -69,8 +69,10 @@ without `remote` keeps the server on loopback and revokes remote pairings.
   turned on and signed in to, with that provider's own sign-in (for example Claude's reset
   credits on `api.anthropic.com` and Antigravity's quotas on `googleapis.com`).
 - **Git hosting, issue trackers and source-control integrations.** These talk to the hosts
-  you configure (for example Azure DevOps through `az`, or Linear once you add its API key). They stay, except Bitbucket, which contacts
-  `api.bitbucket.org` on its own and is not needed here.
+  you configure (for example Azure DevOps through `az`, Linear once you add its API key, or
+  TanStack Source once you turn on its `tanstack_source` feature flag). Workflows, off by
+  default, poll the issue and pull request hosts their triggers name. They stay, except
+  Bitbucket, which contacts `api.bitbucket.org` on its own and is not needed here.
 - **The built-in browser.** It can still download Chrome on first use and browse wherever
   you or an agent navigate.
 - **Web content in chat, pull requests and issues.** Images, audio and video embedded in
@@ -80,7 +82,11 @@ without `remote` keeps the server on loopback and revokes remote pairings.
   instead, so your organization's host is not sent to Google.
 - **Model APIs you configure.** Text generators and cloud dictation send requests to the
   OpenAI, Anthropic, OpenRouter or xAI endpoint you set up, and opening OpenRouter's dictation
-  settings lists its models.
+  settings lists its models. HTTP quota sources poll the URL you give them.
+- **Apple Speech on macOS.** When you pick Apple Speech, macOS may download the language
+  model from Apple the first time you dictate in that language. Windows builds don't have it.
+- **Callbacks that MCP clients register.** A signed-in outside MCP client can subscribe to
+  thread events with a callback URL of its choosing, and T3 Code posts events there.
 - **Hosted web app and mobile app.** See [Scope](#scope). The mobile app also depends on
   T3 Connect for push notifications.
 
@@ -109,7 +115,10 @@ without `remote` keeps the server on loopback and revokes remote pairings.
 
 - [x] **Product analytics** (PostHog at `ingest.t3.codes`): forced off by
       `ANALYTICS_ENABLED`, even with `T3CODE_TELEMETRY_ENABLED=true`; **Settings → About** no
-      longer says usage data is collected (`apps/server/src/telemetry/AnalyticsService.ts`,
+      longer says usage data is collected. **Agent feedback**, which sends agents' reports to
+      the T3 team through analytics, is hidden from **Settings → Labs** and stays off even when
+      a saved setting turns it on, so agents get no feedback tool or instructions
+      (`apps/server/src/telemetry/AnalyticsService.ts`, `apps/server/src/serverSettings.ts`,
       `apps/web/src/components/settings/SettingsPanels.tsx`).
 - [x] **Desktop auto-update checks** against GitHub releases: forced off by
       `DESKTOP_AUTO_UPDATE_ENABLED`; the updater reports itself disabled and never checks, and
@@ -144,8 +153,8 @@ without `remote` keeps the server on loopback and revokes remote pairings.
       instead, even on refresh (`REMOTE_PRICING_ENABLED`,
       `apps/server/src/usage/usageBundledRates.ts`). Price overrides and provider-reported
       costs still apply.
-- [x] **ACP registry**: local ACP commands only, no registry index, package downloads or CDN
-      icons (`ACP_REGISTRY_ENABLED`, `packages/provider-acp-registry`,
+- [x] **ACP registry**: local ACP commands only, no registry index (not even in background
+      provider checks), package downloads or CDN icons (`ACP_REGISTRY_ENABLED`, `packages/provider-acp-registry`,
       `apps/web/src/components/settings/AcpRegistryIcon.tsx`).
 - [x] **Theme marketplace** (open-vsx.org): hidden; importing theme files still works
       (`THEME_MARKETPLACE_ENABLED`, `apps/web/src/openVsxThemes.ts`).
@@ -162,9 +171,10 @@ without `remote` keeps the server on loopback and revokes remote pairings.
       to fetch a newer copy of itself; the agent asks before cloning the source, like any other
       download (`TRIAGE_UPSTREAM_FETCH_ENABLED`, `apps/server/src/triage`).
 - [x] **Device tools**: the Device panel no longer installs `agent-device` and `expo-device-hub`
-      from npm on first use (including when a Simlock host lists its devices); its error gives
-      the `npm install` command to run yourself (`RUNTIME_DOWNLOADS_ENABLED`,
-      `apps/server/src/device/DeviceToolchain.ts`).
+      from npm on first use, locally or on an SSH device host (including when a Simlock host
+      lists its devices); its error gives the `npm install` command to run yourself
+      (`RUNTIME_DOWNLOADS_ENABLED`, `apps/server/src/device/DeviceToolchain.ts`,
+      `apps/server/src/device/sshDeviceScript.ts`).
 - [x] **GitHub star prompt**: after a few prompts, upstream checks on `api.github.com` whether
       your GitHub account starred `pingdotgg/t3code` and then asks for a star. Neither runs
       (`GITHUB_STAR_PROMPT_ENABLED`, `apps/web/src/components/GitHubStarPrompt.tsx`).
@@ -265,7 +275,7 @@ git rebase upstream/main
 
 The list of outbound calls above comes from an audit of upstream at commit
 [`bb7783e`](https://github.com/pingdotgg/t3code/commit/bb7783e295506ad423f527ed28a019836e331e8c); the fork itself started from a slightly newer `main`. It was re-audited after rebasing onto
-upstream `v0.1.10` and `v0.1.11`.
+upstream `v0.1.10`, `v0.1.11` and `v0.1.12`.
 After each rebase, run `egress-check/check.sh` and `node egress-check/source-check.mjs`
 and review anything new.
 

@@ -784,7 +784,9 @@ export const resolveCopilotLaunch = Effect.fn("resolveCopilotLaunch")(function* 
 }): Effect.fn.Return<CopilotLaunch | undefined, CopilotLaunchArgumentError> {
   const platform = yield* HostProcess.Platform;
   const resolveExecutable = yield* SpawnExecutableResolution;
-  const resolved = resolveExecutable(input.binaryPath, platform, input.environment);
+  const resolved = yield* Effect.promise(async () =>
+    resolveExecutable(input.binaryPath, platform, input.environment),
+  );
   if (resolved === undefined) return undefined;
   const env = Object.fromEntries(
     Object.entries(input.environment).filter(

@@ -141,6 +141,7 @@ describe("Copilot text generation", () => {
       yield* generation
         .generateReviewGuide({
           cwd: "/workspace",
+          projectCwd: "/workspace",
           number: 1,
           title: "PR",
           description: "",
