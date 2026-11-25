@@ -1078,8 +1078,9 @@ export function resolveWindowsServerAsarIgnoreGlobs(arch: typeof BuildArch.Type)
 }
 
 // t3code-disconnected: the fork builds natively on Windows, so its payload also carries the
-// server compile cache (about 13 files) that upstream's cross-built installers skip.
-export const WINDOWS_PACKAGED_PAYLOAD_FILE_LIMIT = 100;
+// server compile cache (23 files in 0.1.11, growing with the server's chunks) that upstream's
+// cross-built installers skip.
+export const WINDOWS_PACKAGED_PAYLOAD_FILE_LIMIT = 120;
 export const WINDOWS_SERVER_RESOURCE_SOURCE_DIR = "apps/desktop/prod-resources/windows-server";
 export const WINDOWS_SERVER_EXTRA_RESOURCES = [
   {
